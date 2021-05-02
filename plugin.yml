@@ -1,0 +1,20 @@
+name: "BigQuery Buildkite Plugin"
+description: "This Buildkite plugin can be used to deploy tables/views schemas to BigQuery"
+author: "Jash Parekh <jash389@gmail.com>"
+requirements:
+  - bash
+configuration:
+  properties:
+    gcp_project:
+      type: string
+    dataset_schema_directory:
+      type: string
+    gcp_service_account:
+      type: string
+    plugin_image_version:
+      type: string
+  required:
+    - gcp_project
+    - dataset_schema_directory
+    - gcp_service_account
+  additionalProperties: false
