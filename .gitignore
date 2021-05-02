@@ -1,0 +1,82 @@
+# OS junk files
+[Tt]humbs.db
+*.DS_Store
+
+# Ignore vim & emacs temp files
+*.swp
+*.swo
+*~
+\#*#
+
+# Files from testing
+.hypothesis
+.cache
+**/*.csv
+*.avro
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+*cov*html*
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+log/
+*.log
+
+# Environments
+.env
+.venv
+env/
+venv*/
+ENV/
+env.bak/
+venv.bak/
+scp/
+worker_venv/
+
+# PyCharm
+.idea
+*.iml
+
+# VSCode
+.vscode/
+
+# vim
+.vim
+
+# Cache Directories
+.pytest_cache/
+.mypy_cache/
+
+# Do not version control these files please
+docker/files/secrets/
+site/

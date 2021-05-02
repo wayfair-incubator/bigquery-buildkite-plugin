@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+CUR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# shellcheck source=/dev/null
+source "${CUR_DIR}/../.env"
+
+debug_mode="false"
+if [[ ${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false} =~ (true|on|1) ]]; then
+	debug_mode="true"
+fi
+
+if [[ $BUILDKITE_REPO == git@github.com:wayfair-incubator/bigquery-buildkite-plugin.git ]]; then
+	# if running integration tests against 'master', use release image version
+	if [[ $BUILDKITE_BRANCH == 'master' ]]; then
+		image_with_tag=${PLUGIN_REL_VERSION}
+	# if running integration tests against feature branch, use devel image version
+	else
+		image_with_tag=$BUILDKITE_COMMIT
+	fi
+else
+	# if using plugin in a separate pipeline, default to release image version unless specified
+	image_with_tag=${BUILDKITE_PLUGIN_BIGQUERY_PLUGIN_IMAGE_VERSION:-${PLUGIN_REL_VERSION}}
+fi
+
+echo "${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}"
+echo "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
+
+if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
+	echo "ERROR: bigquery project key not set"
+	exit 1
+fi
+
+if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
+	echo "ERROR: dataset schema not set"
+	exit 1
+fi
+
+if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_GCP_SERVICE_ACCOUNT}" ]; then
+	echo "ERROR: gcp service account not set"
+	exit 1
+fi
+
+echo "--- :docker: Starting execution of docker image"
+
+docker run -t --rm \
+	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
+	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
+	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
+	-e credentials="${GCP_SERVICE_ACCOUNT}" \
+	"${image_with_tag}"

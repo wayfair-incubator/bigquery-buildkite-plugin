@@ -1,0 +1,48 @@
+version: '3.5'
+
+services:
+  test:
+    image: buildkite/plugin-tester
+    volumes:
+      - ".:/plugin"
+
+  lint:
+    image: buildkite/plugin-linter
+    command: ['--id', 'wayfair-incubator/bigquery']
+    volumes:
+      - ".:/plugin"
+
+  shfmt:
+    build:
+      context: .
+      dockerfile: docker/shfmt.dockerfile
+    command: "-s -l -w ." # (s)implify, (l)ist changes, (w)rite changes to file
+    volumes:
+      - ".:/plugin"
+
+  deploy: &deploy
+    build:
+      dockerfile: docker/service.dockerfile
+      context: .
+    image: "wayfair-incubator/bigquery-buildkite-plugin"
+    environment:
+      - GCP_PROJECT='wf-gcp-us-ae-ops-dev'
+      - BUILDKITE_BRANCH='asdad'
+      - SCHEMA_DIRECTORY='junk/test'
+    volumes:
+      - "./:/app"
+
+  devbox:
+    <<: *deploy
+    tty: true
+    entrypoint: /bin/bash
+
+  lock-requirements:
+    <<: *deploy
+    entrypoint: "/bin/bash"
+    command: "docker/lock_requirements.sh"
+
+volumes:
+  home:
+  env:
+    driver: local
