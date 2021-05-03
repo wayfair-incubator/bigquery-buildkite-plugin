@@ -1,13 +1,8 @@
 name: "Unit Tests"
 on:
+  pull_request: {}
   push:
-    branches:
-      - "*"
-    tags-ignore:
-      - "*"
-  pull_request:
-    branches:
-      - main
+      branches: ["main"]
 
 jobs:
   test:
