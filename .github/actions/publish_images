@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source ".env"
+
+build_images() {
+	docker-compose build \
+		--build-arg BUILD_DATE="${BUILD_DATE}" \
+		bigquery-buildkite-plugin
+}
+
+BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+echo "Building Docker images (lastest tag)..."
+build_images
+
+echo "Building Docker images (version tag)..."
+export IMAGE_VERSION="${PLUGIN_VERSION}"
+build_images
+
+echo "Logging into Docker Hub..."
+echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin
+
+echo "Pushing images to Docker Hub..."
+echo wayfair-incubator/bigquery-buildkite-plugin:"${PLUGIN_VERSION}" | xargs -n 1 docker push
+
+echo "Logging out of Docker Hub..."
+docker logout
