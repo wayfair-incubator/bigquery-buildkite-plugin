@@ -53,15 +53,12 @@ log/
 *.log
 
 # Environments
-.env
 .venv
 env/
 venv*/
 ENV/
 env.bak/
 venv.bak/
-scp/
-worker_venv/
 
 # PyCharm
 .idea
