@@ -40,7 +40,7 @@ Example: `gcp-us-project`
 
 The directory in your repository where are you storing the schemas for your tables and views.
 
-Example: `wf-gcp-us-ae-buyfair/buyfair`
+Example: `gcp-us-project/dataset_name`
 
 ### `plugin_image_version` (optional, string)
 
