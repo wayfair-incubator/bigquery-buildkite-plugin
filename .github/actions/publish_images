@@ -8,7 +8,7 @@ BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 build_images() {
 	docker-compose build \
 		--build-arg BUILD_DATE="${BUILD_DATE}" \
-		wayfair-incubator/bigquery-buildkite-plugin
+		bigquery-buildkite-plugin
 }
 
 echo "Building Docker images (lastest tag)..."
