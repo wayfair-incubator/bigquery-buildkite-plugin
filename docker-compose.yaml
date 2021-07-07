@@ -1,5 +1,9 @@
 version: '3.5'
 
+x-build-args: &build_args
+  PLUGIN_VERSION: ${PLUGIN_VERSION}
+  BUILD_DATE: ${BUILD_DATE:-BUILD_DATE_NOT_SET}
+
 services:
   test:
     image: buildkite/plugin-tester
@@ -24,6 +28,7 @@ services:
     build:
       dockerfile: docker/service.dockerfile
       context: .
+      args: *build_args
     image: "wayfair-incubator/bigquery-buildkite-plugin"
     environment:
       - GCP_PROJECT='wf-gcp-us-ae-ops-dev'
