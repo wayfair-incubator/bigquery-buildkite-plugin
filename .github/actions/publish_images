@@ -10,7 +10,6 @@ ARGS=("$@")
 build_images() {
 	docker-compose build \
 		--build-arg BUILD_DATE="${BUILD_DATE}" \
-		"${ARGS[@]}" \
 		bigquery-buildkite-plugin
 }
 
@@ -19,7 +18,7 @@ build_images
 
 echo "Building Docker images (version tag)..."
 export IMAGE_VERSION="${PLUGIN_REL_VERSION}"
-build_images
+docker tag wayfair-incubator/bigquery-buildkite-plugin:latest wayfair-incubator/bigquery-buildkite-plugin:${PLUGIN_REL_VERSION}
 
 echo "Logging into Docker Hub..."
 echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin
