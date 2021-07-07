@@ -13,6 +13,6 @@ jobs:
         uses: elgohr/Publish-Docker-Github-Action@2.22
         with:
           name: wayfair-incubator/bigquery-buildkite-plugin
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
           tag_names: true
