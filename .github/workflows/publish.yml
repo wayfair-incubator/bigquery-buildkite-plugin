@@ -15,4 +15,4 @@ jobs:
           name: wayfair-incubator/bigquery-buildkite-plugin
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          tag_names: true
+          tag_semver: true
