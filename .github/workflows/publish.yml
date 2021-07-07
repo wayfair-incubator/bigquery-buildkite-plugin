@@ -9,7 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4
-      - run: ./.github/actions/publish_images
-        env:
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      - name: Publish
+        uses: elgohr/Publish-Docker-Github-Action@2.22
+        with:
+          name: wayfair-incubator/bigquery-buildkite-plugin
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          tag_names: true
