@@ -5,13 +5,16 @@ source ".env"
 
 BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
+ARGS=("$@")
+
 build_images() {
 	docker-compose build \
 		--build-arg BUILD_DATE="${BUILD_DATE}" \
+		"${ARGS[@]}" \
 		bigquery-buildkite-plugin
 }
 
-echo "Building Docker images (lastest tag)..."
+echo "Building Docker images (latest tag)..."
 build_images
 
 echo "Building Docker images (version tag)..."
