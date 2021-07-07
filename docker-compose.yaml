@@ -20,7 +20,7 @@ services:
     volumes:
       - ".:/plugin"
 
-  deploy: &deploy
+  bigquery-buildkite-plugin: &bigquery-buildkite-plugin
     build:
       dockerfile: docker/service.dockerfile
       context: .
@@ -33,12 +33,12 @@ services:
       - "./:/app"
 
   devbox:
-    <<: *deploy
+    <<: *bigquery-buildkite-plugin
     tty: true
     entrypoint: /bin/bash
 
   lock-requirements:
-    <<: *deploy
+    <<: *bigquery-buildkite-plugin
     entrypoint: "/bin/bash"
     command: "docker/lock_requirements.sh"
 
