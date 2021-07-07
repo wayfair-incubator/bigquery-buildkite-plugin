@@ -18,7 +18,7 @@ build_images
 
 echo "Building Docker images (version tag)..."
 export IMAGE_VERSION="${PLUGIN_REL_VERSION}"
-docker tag wayfair-incubator/bigquery-buildkite-plugin:latest wayfair-incubator/bigquery-buildkite-plugin:${PLUGIN_REL_VERSION}
+build_images
 
 echo "Logging into Docker Hub..."
 echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin
