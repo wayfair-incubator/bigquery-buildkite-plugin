@@ -6,7 +6,7 @@ ARG _GID="100"
 ARG _SHELL="/bin/bash"
 
 ARG VERSION=${PLUGIN_REL_VERSION}
-ARG DESCRIPTION="Run sonar-scanner in Docker"
+ARG DESCRIPTION="Docker image for BigQuery Buildkite Plugin"
 ARG VCS_URL="https://github.com/wayfair-incubator/bigquery-buildkite-plugin"
 
 ARG BUILD_DATE
