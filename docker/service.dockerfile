@@ -11,7 +11,7 @@ ARG VCS_URL="https://github.com/wayfair-incubator/bigquery-buildkite-plugin"
 
 ARG BUILD_DATE
 LABEL \
-    com.wayfair.name="wayfair-incubator/bigquery-buildkite-plugin" \
+    com.wayfair.name="wayfairossdev/bigquery-buildkite-plugin" \
     com.wayfair.build-date=${BUILD_DATE} \
     com.wayfair.description=${DESCRIPTION} \
     com.wayfair.vsc_url=${VCS_URL} \
