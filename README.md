@@ -23,7 +23,6 @@ steps:
           gcp_project: gcp-us-project
           dataset_schema_directory: schemas/gcp-us-project/dataset
           gcp_service_account: credentials
-            - BUILDKITE_BUILD_NUMBER
 ```
 
 ## Configuration
@@ -39,6 +38,12 @@ Example: `gcp-us-project`
 ### `dataset_schema_directory` (required, string)
 
 The directory in your repository where are you storing the schemas for your tables and views.
+
+Example: `gcp-us-project/dataset_name`
+
+### `gcp_service_account` (required, string)
+
+JSON string for a GCP Service Account with pemission to create and update tables in BigQuery.
 
 Example: `gcp-us-project/dataset_name`
 
