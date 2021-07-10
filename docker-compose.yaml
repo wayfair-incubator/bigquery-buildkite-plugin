@@ -29,7 +29,7 @@ services:
       dockerfile: docker/service.dockerfile
       context: .
       args: *build_args
-    image: wayfair-incubator/bigquery-buildkite-plugin:${IMAGE_VERSION:-latest}
+    image: wayfairossdev/bigquery-buildkite-plugin:${IMAGE_VERSION:-latest}
     environment:
       - GCP_PROJECT='wf-gcp-us-ae-ops-dev'
       - BUILDKITE_BRANCH='asdad'
