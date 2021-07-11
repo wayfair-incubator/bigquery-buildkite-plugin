@@ -41,12 +41,6 @@ The directory in your repository where are you storing the schemas for your tabl
 
 Example: `gcp-us-project/dataset_name`
 
-### `gcp_service_account` (required, string)
-
-JSON string for a GCP Service Account with pemission to create and update tables in BigQuery.
-
-Example: `gcp-us-project/dataset_name`
-
 ### `plugin_image_version` (optional, string)
 
 **ONLY to be used when testing feature branch changes to this plugin from another pipeline**
@@ -55,6 +49,14 @@ The full hash for the latest commit to your feature branch for this plugin. This
 
 Example: `1e602649cebf27b16dc45177ef1552b068fd2f8e`
 
+### Secret
+
+This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable.
+
+```yaml
+env:
+  gcp_service_account: '{"email": ""}'
+```
 
 ## Example
 
@@ -64,7 +66,7 @@ The following pipeline will deploy all the schemas to the `gcp-us-project` livin
 
 ## Schemas
 
-This plugin uses [GBQ](https://github.com/wayfair-incubator/gbq) underneath to deploy to Google BigQuery.
+This plugin uses [GBQ](https://github.com/wayfair-incubator/gbq) to deploy to Google BigQuery.
 [GBQ](https://github.com/wayfair-incubator/gbq) now supports specifying partitions with the schema as well.
 
 To leverage this you need to nest your JSON table schema in a dictionary. An example for the same is given below. Library supports Time and Range based partitioning along with Clustering.
