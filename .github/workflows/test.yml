@@ -6,8 +6,47 @@ on:
 
 jobs:
   test:
-    name: Buildkite Plugin Tests
+    name: Buildkite Plugin Bash Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4
       - run: docker-compose run --rm test
+
+  py-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          requirements: "true"
+          test-requirements: "true"
+
+      - name: Run pytest
+        run: pytest --cov deploy tests/test_deploy.py --cov-report xml:coverage-${{ env.PYTHON_VERSION }}.xml --junitxml=test-results-${{ env.PYTHON_VERSION }}.xml
+
+      - name: Upload pytest test results artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pytest-results-${{ env.PYTHON_VERSION }}
+          path: test-results-${{ env.PYTHON_VERSION }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+
+      - name: Upload coverage results artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pytest-coverage-${{ env.PYTHON_VERSION }}
+          path: coverage-${{ env.PYTHON_VERSION }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+
+      - name: Publish coverage results to Codecov
+        uses: codecov/codecov-action@v1.5.0
+        with:
+          file: coverage-${{ env.PYTHON_VERSION }}.xml
+          fail_ci_if_error: true
