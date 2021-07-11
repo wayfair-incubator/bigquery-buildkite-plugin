@@ -41,12 +41,6 @@ The directory in your repository where are you storing the schemas for your tabl
 
 Example: `gcp-us-project/dataset_name`
 
-### `gcp_service_account` (required, string)
-
-JSON string for a GCP Service Account with pemission to create and update tables in BigQuery.
-
-Example: `gcp-us-project/dataset_name`
-
 ### `plugin_image_version` (optional, string)
 
 **ONLY to be used when testing feature branch changes to this plugin from another pipeline**
@@ -55,6 +49,14 @@ The full hash for the latest commit to your feature branch for this plugin. This
 
 Example: `1e602649cebf27b16dc45177ef1552b068fd2f8e`
 
+### Secret
+
+This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable.
+
+```yaml
+env:
+  GCP_SERVICE_ACCOUNT: '{"email": ""}'
+```
 
 ## Example
 
