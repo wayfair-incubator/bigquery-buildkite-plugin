@@ -66,7 +66,7 @@ The following pipeline will deploy all the schemas to the `gcp-us-project` livin
 
 ## Schemas
 
-This plugin uses [GBQ](https://github.com/wayfair-incubator/gbq) underneath to deploy to Google BigQuery.
+This plugin uses [GBQ](https://github.com/wayfair-incubator/gbq) to deploy to Google BigQuery.
 [GBQ](https://github.com/wayfair-incubator/gbq) now supports specifying partitions with the schema as well.
 
 To leverage this you need to nest your JSON table schema in a dictionary. An example for the same is given below. Library supports Time and Range based partitioning along with Clustering.
