@@ -8,6 +8,7 @@ sys.tracebacklimit = 0
 
 
 def _validate_env_variables():
+    print(os.environ)
     if not os.environ.get("gcp_project"):
         raise Exception("Missing `gcp_project` config")
 
