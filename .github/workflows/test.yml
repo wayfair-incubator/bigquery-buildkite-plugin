@@ -13,6 +13,7 @@ jobs:
       - run: docker-compose run --rm test
 
   py-test:
+    name: Buildkite Plugin Pytest
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
