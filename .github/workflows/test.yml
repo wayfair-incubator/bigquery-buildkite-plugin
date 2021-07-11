@@ -21,9 +21,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2.3.4
-          - uses: actions/setup-python@v2.2.2
-            with:
-              python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
         with:
