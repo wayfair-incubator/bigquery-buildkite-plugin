@@ -6,12 +6,12 @@ x-build-args: &build_args
 
 services:
   test:
-    image: buildkite/plugin-tester
+    image: "buildkite/plugin-tester"
     volumes:
       - ".:/plugin"
 
   lint:
-    image: buildkite/plugin-linter
+    image: "buildkite/plugin-linter"
     command: ['--id', 'wayfair-incubator/bigquery']
     volumes:
       - ".:/plugin"
@@ -19,14 +19,14 @@ services:
   shfmt:
     build:
       context: .
-      dockerfile: docker/shfmt.dockerfile
+      dockerfile: "docker/shfmt.dockerfile"
     command: "-s -l -w ." # (s)implify, (l)ist changes, (w)rite changes to file
     volumes:
       - ".:/plugin"
 
   bigquery-buildkite-plugin: &bigquery-buildkite-plugin
     build:
-      dockerfile: docker/service.dockerfile
+      dockerfile: "docker/service.dockerfile"
       context: .
       args: *build_args
     image: wayfairossdev/bigquery-buildkite-plugin:${IMAGE_VERSION:-latest}
@@ -37,10 +37,20 @@ services:
     volumes:
       - "./:/app"
 
-  devbox:
-    <<: *bigquery-buildkite-plugin
-    tty: true
-    entrypoint: /bin/bash
+  devbox: &devbox
+    build:
+      dockerfile: "./docker/devbox.dockerfile"
+      context: "."
+    stdin_open: "true" # docker run -i
+    tty: "true"        # docker run -t
+    volumes:
+      - "./:/app"
+
+  # run all the tests and linting locally
+  # - black & isort will format code to address issues
+  py-test:
+    <<: *devbox
+    command: "docker/run_tests.sh --format-code"
 
   lock-requirements:
     <<: *bigquery-buildkite-plugin

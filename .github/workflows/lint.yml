@@ -4,6 +4,9 @@ on:
   push:
       branches: ["main"]
 
+env:
+  PYTHON_VERSION: "3.9.1"
+
 jobs:
   shfmt:
     name: Bash shfmt
@@ -11,9 +14,134 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.4
       - run: docker-compose run --rm shfmt
+
   lint:
     name: Lint bash and markdown
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.4
       - run: docker-compose run --rm lint
+
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          test-requirements: "true"
+
+      - name: Run bandit
+        run: bandit --ini .bandit -r deploy.py
+
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - name: Set up Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          test-requirements: "true"
+
+      - name: Run black
+        run: black --check deploy.py tests/test_deploy.py
+
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          test-requirements: "true"
+
+      - name: Run flake8
+        run: flake8 deploy.py tests/test_deploy.py
+
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          requirements: "true"
+          test-requirements: "true"
+
+      - name: Run isort
+        run: isort --recursive --check-only deploy.py tests/test_deploy.py
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          test-requirements: "true"
+
+      - name: Run mypy
+        run: mypy deploy.py tests/test_deploy.py
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.6, 3.7, 3.8, 3.9 ]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+      - uses: actions/setup-python@v2.2.2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          requirements: "true"
+          test-requirements: "true"
+
+      - name: Run pytest
+        run: pytest --cov-report xml:coverage-${{ matrix.python-version }}.xml --junitxml=test-results-${{ matrix.python-version }}.xml
+
+      - name: Upload pytest test results artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pytest-results-${{ matrix.python-version }}
+          path: test-results-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+
+      - name: Upload coverage results artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pytest-coverage-${{ matrix.python-version }}
+          path: coverage-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
+
+      - name: Publish coverage results to Codecov
+        uses: codecov/codecov-action@v1.5.0
+        with:
+          file: coverage-${{ matrix.python-version }}.xml
+          fail_ci_if_error: true
