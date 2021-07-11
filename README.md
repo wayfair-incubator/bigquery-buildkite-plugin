@@ -55,7 +55,7 @@ This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable.
 
 ```yaml
 env:
-  GCP_SERVICE_ACCOUNT: '{"email": ""}'
+  gcp_service_account: '{"email": ""}'
 ```
 
 ## Example
