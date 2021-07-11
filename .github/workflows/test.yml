@@ -19,8 +19,18 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
     steps:
-      - uses: actions/checkout@v2.3.4
-      - run: docker-compose run --rm py-test
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+          - uses: actions/setup-python@v2.2.2
+            with:
+              python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          requirements: "true"
+          test-requirements: "true"
+      - name: Run pytest
+        run: pytest -s --cov deploy tests/test_deploy.py --cov-report xml:coverage-${{ env.PYTHON_VERSION }}.xml --junitxml=test-results-${{ env.PYTHON_VERSION }}.xml
 
   py-test:
     name: Buildkite Plugin Pytest
