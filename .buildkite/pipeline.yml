@@ -5,4 +5,3 @@
         dataset_schema_directory: "schemas/wf-gcp-us-ae-ops-dev/junk"
     agents:
       queue: "default"
-      
