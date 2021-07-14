@@ -54,7 +54,7 @@ docker pull "${image_with_tag}"
 echo "--- :docker: Running docker image"
 docker run -t --rm \
 	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
-	-v ./"${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}":/app/"${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
+	-v "${PWD}/${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}":/app/"${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}:ro" \
 	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
 	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
 	-e "credentials=$(</tmp/service_account.json)" \
