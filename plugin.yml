@@ -16,5 +16,4 @@ configuration:
   required:
     - gcp_project
     - dataset_schema_directory
-    - gcp_service_account
   additionalProperties: false
