@@ -59,5 +59,5 @@ teardown() {
 
     run $PWD/hooks/command
     assert_success
-    assert_output --partial "--- :hammer_and_wrench: Pull docker image"
+    assert_output --partial "--- :hammer_and_wrench: Pulling docker image"
 }
