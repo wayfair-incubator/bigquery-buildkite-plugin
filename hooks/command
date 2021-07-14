@@ -29,9 +29,6 @@ echo "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
 echo "${PLUGIN_REL_VERSION}"
 echo "${image_with_tag}"
 
-
-image_with_tag=""
-
 if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
   echo "ERROR: bigquery project key not set"
   exit 1
@@ -53,5 +50,5 @@ docker run -t --rm \
 	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
 	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
 	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
- 	-e credentials="${gcp_service_account}" \
+ 	-e credentials=${gcp_service_account} \
 	"${image_with_tag}"
