@@ -21,22 +21,31 @@ if [[ $BUILDKITE_REPO == git@github.com:wayfair-incubator/bigquery-buildkite-plu
 	fi
 else
 	# if using plugin in a separate pipeline, default to release image version unless specified
-	image_with_tag=${BUILDKITE_PLUGIN_BIGQUERY_PLUGIN_IMAGE_VERSION:-${PLUGIN_REL_VERSION}}
+	image_with_tag="wayfairossdev/bigquery-buildkite-plugin:${PLUGIN_REL_VERSION}"
 fi
 
 echo "${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}"
 echo "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
-echo "${gcp_service_account}"
+echo "${PLUGIN_REL_VERSION}"
+echo "${image_with_tag}"
 
-# if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
-# 	echo "ERROR: bigquery project key not set"
-# 	exit 1
-# fi
 
-# if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
-# 	echo "ERROR: dataset schema not set"
-# 	exit 1
-# fi
+image_with_tag=""
+
+if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
+  echo "ERROR: bigquery project key not set"
+  exit 1
+fi
+
+if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
+  echo "ERROR: dataset schema not set"
+  exit 1
+fi
+
+if [ -z "${gcp_service_account}" ]; then
+  echo "ERROR: gcp service account not set"
+  exit 1
+fi
 
 echo "--- :docker: Starting execution of docker image"
 
@@ -44,4 +53,5 @@ docker run -t --rm \
 	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
 	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
 	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
+ 	-e credentials="${gcp_service_account}" \
 	"${image_with_tag}"
