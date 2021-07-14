@@ -38,4 +38,6 @@ WORKDIR /app
 
 RUN pip install -r requirements.lock
 
-CMD bash
+RUN chmod +x /app/deploy.sh
+
+ENTRYPOINT [ "/app/deploy.sh" ]
