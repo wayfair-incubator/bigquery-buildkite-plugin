@@ -31,9 +31,8 @@ services:
       args: *build_args
     image: wayfairossdev/bigquery-buildkite-plugin:${IMAGE_VERSION:-latest}
     environment:
-      - GCP_PROJECT='wf-gcp-us-ae-ops-dev'
-      - BUILDKITE_BRANCH='asdad'
-      - SCHEMA_DIRECTORY='junk/test'
+      - gcp_project=wf-gcp-us-ae-ops-dev
+      - dataset_schema_directory=junk/test
     volumes:
       - "./:/app"
 

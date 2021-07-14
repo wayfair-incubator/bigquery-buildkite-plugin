@@ -31,13 +31,14 @@ ENV PIP_NO_CACHE_DIR "true"
 
 RUN mkdir /app && chown ${UID}:${GID} /app
 
-USER ${_USER}
-
-COPY --chown=${UID}:${GID} ./requirements* /app/
+ADD . /app
+COPY . /app
 WORKDIR /app
 
-RUN pip install -r requirements.lock
-
 RUN chmod +x /app/deploy.sh
+
+USER ${_USER}
+
+RUN pip install -r requirements.lock
 
 ENTRYPOINT [ "/app/deploy.sh" ]
