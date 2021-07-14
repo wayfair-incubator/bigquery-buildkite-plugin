@@ -3,6 +3,9 @@ set -eo pipefail
 
 CUR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
+rm -rf /tmp/service_account.json
+PIPELINE_FILE="/tmp/service_account.json"
+
 # shellcheck source=/dev/null
 source "${CUR_DIR}/../.env"
 
@@ -21,11 +24,12 @@ if [[ $BUILDKITE_REPO == git@github.com:wayfair-incubator/bigquery-buildkite-plu
 	fi
 else
 	# if using plugin in a separate pipeline, default to release image version unless specified
-	image_with_tag=${BUILDKITE_PLUGIN_BIGQUERY_PLUGIN_IMAGE_VERSION:-${PLUGIN_REL_VERSION}}
+	image_with_tag="wayfairossdev/bigquery-buildkite-plugin:${PLUGIN_REL_VERSION}"
 fi
 
 echo "${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}"
 echo "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
+echo "${image_with_tag}"
 
 if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
 	echo "ERROR: bigquery project key not set"
@@ -37,11 +41,21 @@ if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
 	exit 1
 fi
 
-echo "--- :docker: Starting execution of docker image"
+if [ -z "${gcp_service_account}" ]; then
+	echo "ERROR: gcp service account not set"
+	exit 1
+fi
 
+echo "$gcp_service_account" >"$PIPELINE_FILE"
+
+echo "--- :hammer_and_wrench: Pulling docker image"
+docker pull "${image_with_tag}"
+
+echo "--- :docker: Running docker image"
 docker run -t --rm \
 	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
+	-v "${PWD}/${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}":/app/"${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}:ro" \
 	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
 	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
-	-e credentials="${GCP_SERVICE_ACCOUNT}" \
+	-e "credentials=$(</tmp/service_account.json)" \
 	"${image_with_tag}"

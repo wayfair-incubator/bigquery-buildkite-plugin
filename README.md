@@ -23,7 +23,6 @@ steps:
           gcp_project: gcp-us-project
           dataset_schema_directory: schemas/gcp-us-project/dataset
           gcp_service_account: credentials
-            - BUILDKITE_BUILD_NUMBER
 ```
 
 ## Configuration
@@ -50,6 +49,14 @@ The full hash for the latest commit to your feature branch for this plugin. This
 
 Example: `1e602649cebf27b16dc45177ef1552b068fd2f8e`
 
+### Secret
+
+This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable. Make sure to store it [securely](https://buildkite.com/docs/pipelines/secrets)!
+
+```yaml
+env:
+  gcp_service_account: '{"email": ""}'
+```
 
 ## Example
 
@@ -59,7 +66,7 @@ The following pipeline will deploy all the schemas to the `gcp-us-project` livin
 
 ## Schemas
 
-This plugin uses [GBQ](https://github.com/wayfair-incubator/gbq) underneath to deploy to Google BigQuery.
+This plugin uses [GBQ](https://github.com/wayfair-incubator/gbq) to deploy to Google BigQuery.
 [GBQ](https://github.com/wayfair-incubator/gbq) now supports specifying partitions with the schema as well.
 
 To leverage this you need to nest your JSON table schema in a dictionary. An example for the same is given below. Library supports Time and Range based partitioning along with Clustering.

@@ -3,26 +3,28 @@ set -euo pipefail
 
 source ".env"
 
+BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+ARGS=("$@")
+
 build_images() {
 	docker-compose build \
 		--build-arg BUILD_DATE="${BUILD_DATE}" \
 		bigquery-buildkite-plugin
 }
 
-BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-
-echo "Building Docker images (lastest tag)..."
+echo "Building Docker images (latest tag)..."
 build_images
 
 echo "Building Docker images (version tag)..."
-export IMAGE_VERSION="${PLUGIN_VERSION}"
+export IMAGE_VERSION="${PLUGIN_REL_VERSION}"
 build_images
 
 echo "Logging into Docker Hub..."
 echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USER}" --password-stdin
 
 echo "Pushing images to Docker Hub..."
-echo wayfair-incubator/bigquery-buildkite-plugin:"${PLUGIN_VERSION}" | xargs -n 1 docker push
+echo wayfairossdev/bigquery-buildkite-plugin:"${PLUGIN_REL_VERSION}" | xargs -n 1 docker push
 
 echo "Logging out of Docker Hub..."
 docker logout
