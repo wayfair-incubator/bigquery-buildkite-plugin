@@ -51,7 +51,7 @@ Example: `1e602649cebf27b16dc45177ef1552b068fd2f8e`
 
 ### Secret
 
-This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable.
+This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable. Make sure to store it [securely](https://buildkite.com/docs/pipelines/secrets)!
 
 ```yaml
 env:
