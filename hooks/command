@@ -50,5 +50,4 @@ docker run -t --rm \
 	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
 	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
 	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
- 	-e credentials=${gcp_service_account} \
 	"${image_with_tag}"
