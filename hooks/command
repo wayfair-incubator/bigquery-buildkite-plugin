@@ -48,7 +48,7 @@ fi
 
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
-echo "--- :hammer_and_wrench: Pull docker image"
+echo "--- :hammer_and_wrench: Pulling docker image"
 docker pull "${image_with_tag}"
 
 echo "--- :docker: Running docker image"
