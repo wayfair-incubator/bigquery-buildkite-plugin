@@ -53,11 +53,11 @@ teardown() {
 @test "Logs start of run" {
     export BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT="gcp-project"
     export BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY="dataset"
-    export BUILDKITE_PLUGIN_BIGQUERY_GCP_SERVICE_ACCOUNT="credentials"
+    export gcp_service_account="credentials"
 
     stub docker
 
     run $PWD/hooks/command
     assert_success
-    assert_output --partial "--- :docker: Starting execution of docker image"
+    assert_output --partial "--- :hammer_and_wrench: Pull docker image"
 }

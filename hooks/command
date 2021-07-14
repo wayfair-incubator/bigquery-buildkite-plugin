@@ -2,6 +2,8 @@
 set -eo pipefail
 
 CUR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+rm -rf /tmp/service_account.json
 PIPELINE_FILE="/tmp/service_account.json"
 
 # shellcheck source=/dev/null
@@ -27,28 +29,29 @@ fi
 
 echo "${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}"
 echo "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
-echo "${PLUGIN_REL_VERSION}"
 echo "${image_with_tag}"
 
 if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
-  echo "ERROR: bigquery project key not set"
-  exit 1
+	echo "ERROR: bigquery project key not set"
+	exit 1
 fi
 
 if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
-  echo "ERROR: dataset schema not set"
-  exit 1
+	echo "ERROR: dataset schema not set"
+	exit 1
 fi
 
 if [ -z "${gcp_service_account}" ]; then
-  echo "ERROR: gcp service account not set"
-  exit 1
+	echo "ERROR: gcp service account not set"
+	exit 1
 fi
 
-echo "$gcp_service_account" > "$PIPELINE_FILE"
+echo "$gcp_service_account" >"$PIPELINE_FILE"
 
-echo "--- :docker: Starting execution of docker image"
+echo "--- :hammer_and_wrench: Pull docker image"
+docker pull "${image_with_tag}"
 
+echo "--- :docker: Run docker image"
 docker run -t --rm \
 	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
 	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
