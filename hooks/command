@@ -37,11 +37,6 @@ if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
 	exit 1
 fi
 
-if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_GCP_SERVICE_ACCOUNT}" ]; then
-	echo "ERROR: gcp service account not set"
-	exit 1
-fi
-
 echo "--- :docker: Starting execution of docker image"
 
 docker run -t --rm \
