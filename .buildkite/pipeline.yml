@@ -1,7 +1,0 @@
-- label: ":buildkite: Integration Test"
-    plugins:
-      ssh://git@github.com/wayfair-incubator/bigquery-buildkite-plugin#v0.1.0:
-        gcp_project: "wf-gcp-us-ae-ops-dev"
-        dataset_schema_directory: "schemas/wf-gcp-us-ae-ops-dev/junk"
-    agents:
-      queue: "default"
