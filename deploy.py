@@ -27,6 +27,7 @@ def _deploy():
         bq = BigQuery(credentials, gcp_project)
         for root, dirs, files in os.walk(dataset_schema_directory):
             dataset = root.split("/").pop()
+            print(files)
             for file in files:
                 with open(f"{root}/{file}", "r") as contents:
                     file_name_and_extension = file.split(".")
