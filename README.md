@@ -48,7 +48,7 @@ The full hash for the latest commit to your feature branch for this plugin. This
 
 Example: `1e602649cebf27b16dc45177ef1552b068fd2f8e`
 
-### Secret
+## Secret
 
 This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable. Make sure to store it [securely](https://buildkite.com/docs/pipelines/secrets)!
 
