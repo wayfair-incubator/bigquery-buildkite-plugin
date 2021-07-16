@@ -5,3 +5,7 @@
 .cache
 
 .idea
+README.md
+CHANGELOG.md
+docker-compose.yml
+docker/
