@@ -4,6 +4,10 @@
 .gitignore
 .cache
 
+# OS junk files
+[Tt]humbs.db
+*.DS_Store
+
 .idea
 README.md
 CHANGELOG.md
