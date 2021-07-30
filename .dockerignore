@@ -8,6 +8,12 @@
 [Tt]humbs.db
 *.DS_Store
 
+# Ignore vim & emacs temp files
+*.swp
+*.swo
+*~
+\#*#
+
 .idea
 README.md
 CHANGELOG.md
