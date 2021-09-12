@@ -73,6 +73,7 @@ args+=(
 	"--env" "BUILDKITE_AGENT_ACCESS_TOKEN"
 	"--env" "dataset_schema_directory=$dataset_schema_directory"
 	"--env" "gcp_project=$gcp_project"
+	"--env" "credentials=$(</tmp/service_account.json)"
 	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
 
@@ -104,7 +105,7 @@ echo "--- :docker: Running command in ${image}"
 echo "$ ${display_command[*]}" >&2
 
 if [[ ${debug_mode} == "true" ]]; then
-	echo "docker create ${args[*]}" >&2
+	echo "docker create" >&2
 	echo "docker cp \"${PWD}/.\" \"dockerContainerID:${workdir}\"" >&2
 fi
 
@@ -112,4 +113,4 @@ fi
 DOCKERID=$(docker create "${args[@]}") # substitute any backticks
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"
 docker cp "${PLUGIN_DIR}/plugin_scripts" "${DOCKERID}:${workdir}/plugin_scripts"
-docker start -a "${DOCKERID}" --env "credentials=$(</tmp/service_account.json)"
+docker start -a "${DOCKERID}"
