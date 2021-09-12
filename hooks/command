@@ -1,61 +1,112 @@
-#!/usr/bin/env bash
-set -eo pipefail
+#!/bin/bash
+set -euo pipefail
 
-CUR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+PLUGIN_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)/.."
 
 rm -rf /tmp/service_account.json
 PIPELINE_FILE="/tmp/service_account.json"
 
-# shellcheck source=/dev/null
-source "${CUR_DIR}/../.env"
-
 debug_mode="false"
-if [[ ${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false} =~ (true|on|1) ]]; then
-	debug_mode="true"
+if [[ "${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false}" =~ (true|on|1) ]] ; then
+  echo "--- :hammer: Enabling debug mode"
+  debug_mode="true"
 fi
 
-if [[ $BUILDKITE_REPO == git@github.com:wayfair-incubator/bigquery-buildkite-plugin.git ]]; then
-	# if running integration tests against 'master', use release image version
-	if [[ $BUILDKITE_BRANCH == 'master' ]]; then
-		image_with_tag=${PLUGIN_REL_VERSION}
-	# if running integration tests against feature branch, use devel image version
-	else
-		image_with_tag=$BUILDKITE_COMMIT
-	fi
-else
-	# if using plugin in a separate pipeline, default to release image version unless specified
-	image_with_tag="wayfairossdev/bigquery-buildkite-plugin:${PLUGIN_REL_VERSION}"
-fi
+workdir="/workdir"
 
-echo "${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}"
-echo "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
-echo "${image_with_tag}"
+default_image="python:3.9.7-buster"
+image="${BUILDKITE_PLUGIN_BIGQUERY_CUSTOM_IMAGE:-$default_image}"
 
 if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
-	echo "ERROR: bigquery project key not set"
+	echo "ERROR: bigquery project (gcp_project) key not set"
 	exit 1
 fi
+
+gcp_project = $BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT
 
 if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
-	echo "ERROR: dataset schema not set"
+	echo "ERROR: dataset schema (dataset_schema_directory) not set"
 	exit 1
 fi
 
+dataset_schema_directory = $BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY
+
 if [ -z "${gcp_service_account}" ]; then
-	echo "ERROR: gcp service account not set"
+	echo "ERROR: gcp service account (gcp_service_account) not set"
 	exit 1
 fi
 
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
-echo "--- :hammer_and_wrench: Pulling docker image"
-docker pull "${image_with_tag}"
+if [[ "${debug_mode}" = "true" ]] ; then
+  echo "Configuration:"
+  echo "GCP Project: ${gcp_project}"
+  echo "Dataset Schema Directory: ${dataset_schema_directory}"
+  echo "Docker Image: ${gcp_service_account}"
+fi
 
-echo "--- :docker: Running docker image"
-docker run -t --rm \
-	-v /usr/bin/buildkite-agent:/usr/bin/buildkite-agent \
-	-v "${PWD}/${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}":/app/"${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}:ro" \
-	-e dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" \
-	-e gcp_project="${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}" \
-	-e "credentials=$(</tmp/service_account.json)" \
-	"${image_with_tag}"
+args=("-it" "--rm" "--init" "--workdir" "${workdir}")
+
+# Propagate all environment variables into the container
+if [[ -n "${BUILDKITE_ENV_FILE:-}" ]] ; then
+  # Read in the env file and convert to --env params for docker
+  # This is because --env-file doesn't support newlines or quotes per https://docs.docker.com/compose/env-file/#syntax-rules
+  while read -r var; do
+    args+=( --env "${var%%=*}" )
+  done < "$BUILDKITE_ENV_FILE"
+else
+  echo "🚨 Not propagating environment variables to container as \$BUILDKITE_ENV_FILE is not set"
+fi
+
+# Mount the buildkite-agent
+if [[ -z "${BUILDKITE_AGENT_BINARY_PATH:-}" ]] ; then
+  if ! command -v buildkite-agent >/dev/null 2>&1 ; then
+    echo "+++ 🚨 Failed to find buildkite-agent in PATH to mount into container"
+    exit 1
+  else
+    BUILDKITE_AGENT_BINARY_PATH=$(command -v buildkite-agent)
+  fi
+fi
+args+=(
+  "--env" "BUILDKITE_JOB_ID"
+  "--env" "BUILDKITE_BUILD_ID"
+  "--env" "BUILDKITE_AGENT_ACCESS_TOKEN"
+  "--env" "dataset_schema_directory=$dataset_schema_directory"
+  "--env" "gcp_project=$gcp_project"
+  "--env" "credentials=$(</tmp/service_account.json)"
+  "--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
+)
+
+# Add the image in before the shell and command
+args+=("${image}")
+
+# Assemble the shell and command arguments into the docker arguments
+command=()
+display_command=()
+
+shell=("/bin/sh" "-e" "-c")
+args+=("${shell[@]}")
+display_command+=("${shell[@]}")
+command+=("pip -q install -r requirements.lock && python plugin_scripts/deploy.py")
+# join command lines
+command_string="$( IFS=$'\n';  echo "${command[*]}" )"
+
+args+=("${command_string}")
+display_command+=("'${command_string}'")
+
+echo "--- :docker: Logging \"docker create\" command"
+echo "$ docker create ${args[*]}" >&2
+
+echo "--- :docker: Running command in ${image}"
+echo "$ ${display_command[*]}" >&2
+
+if [[ "${debug_mode}" = "true" ]] ; then
+  echo "docker create ${args[*]}" >&2
+  echo "docker cp \"${PWD}/.\" \"dockerContainerID:${workdir}\"" >&2
+fi
+
+# # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`
+DOCKERID=$(docker create "${args[@]}") # substitute any backticks
+docker cp "${PWD}/." "${DOCKERID}:${workdir}"
+docker cp "${PLUGIN_DIR}/deploy.py" "${DOCKERID}:${workdir}/plugin_scripts/deploy.py"
+docker start -a "${DOCKERID}"
