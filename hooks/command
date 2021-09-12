@@ -22,14 +22,14 @@ if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
 	exit 1
 fi
 
-gcp_project = $BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT
+gcp_project = "${BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT}"
 
 if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}" ]; then
 	echo "ERROR: dataset schema (dataset_schema_directory) not set"
 	exit 1
 fi
 
-dataset_schema_directory = $BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY
+dataset_schema_directory = "${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
 
 if [ -z "${gcp_service_account}" ]; then
 	echo "ERROR: gcp service account (gcp_service_account) not set"
