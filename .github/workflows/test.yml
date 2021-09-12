@@ -4,6 +4,9 @@ on:
   push:
       branches: ["main"]
 
+env:
+  PYTHON_VERSION: "3.9.1"
+
 jobs:
   py-test:
     name: Buildkite Plugin Pytest
@@ -21,7 +24,7 @@ jobs:
           test-requirements: "true"
 
       - name: Run pytest
-        run: pytest --cov deploy tests/test_deploy.py --cov-report xml:coverage-${{ env.PYTHON_VERSION }}.xml --junitxml=test-results-${{ env.PYTHON_VERSION }}.xml
+        run: pytest --cov plugin_scripts/deploy tests/test_deploy.py --cov-report xml:coverage-${{ env.PYTHON_VERSION }}.xml --junitxml=test-results-${{ env.PYTHON_VERSION }}.xml
 
       - name: Upload pytest test results artifact
         uses: actions/upload-artifact@v2
