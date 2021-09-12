@@ -87,7 +87,8 @@ display_command=()
 shell=("/bin/sh" "-e" "-c")
 args+=("${shell[@]}")
 display_command+=("${shell[@]}")
-command+=("pip -q install -r requirements.lock && python plugin_scripts/deploy.py")
+command+=("pip -q install -r requirements.lock")
+#command+=("python plugin_scripts/deploy.py")
 # join command lines
 command_string="$( IFS=$'\n';  echo "${command[*]}" )"
 
