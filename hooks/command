@@ -42,7 +42,7 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "Configuration:"
 	echo "GCP Project: ${gcp_project}"
 	echo "Dataset Schema Directory: ${dataset_schema_directory}"
-	echo "Docker Image: ${gcp_service_account}"
+	echo "Docker Image: ${image}"
 fi
 
 args=("-it" "--rm" "--init" "--workdir" "${workdir}")
@@ -73,7 +73,6 @@ args+=(
 	"--env" "BUILDKITE_AGENT_ACCESS_TOKEN"
 	"--env" "dataset_schema_directory=$dataset_schema_directory"
 	"--env" "gcp_project=$gcp_project"
-	"--env" "credentials=$(</tmp/service_account.json)"
 	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
 
@@ -113,4 +112,4 @@ fi
 DOCKERID=$(docker create "${args[@]}") # substitute any backticks
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"
 docker cp "${PLUGIN_DIR}/plugin_scripts" "${DOCKERID}:${workdir}/plugin_scripts"
-docker start -a "${DOCKERID}"
+docker start -a "${DOCKERID}" --env "credentials=$(</tmp/service_account.json)"
