@@ -95,7 +95,7 @@ args+=("${command_string}")
 display_command+=("'${command_string}'")
 
 echo "--- :docker: Logging \"docker create\" command"
-echo "$ docker create ${args[*]}" >&2
+echo "$ docker create" >&2
 
 echo "--- :docker: Running command in ${image}"
 echo "$ ${display_command[*]}" >&2
@@ -108,5 +108,5 @@ fi
 # # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`
 DOCKERID=$(docker create "${args[@]}") # substitute any backticks
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"
-docker cp "${PLUGIN_DIR}/deploy.py" "${DOCKERID}:${workdir}/plugin_scripts/deploy.py"
+docker cp "${PLUGIN_DIR}/plugin_scripts/deploy.py" "${DOCKERID}:${workdir}/plugin_scripts/deploy.py"
 docker start -a "${DOCKERID}"
