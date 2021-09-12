@@ -87,8 +87,8 @@ display_command=()
 shell=("/bin/sh" "-e" "-c")
 args+=("${shell[@]}")
 display_command+=("${shell[@]}")
-command+=("pip -q install -r requirements.lock")
-#command+=("python plugin_scripts/deploy.py")
+command+=("pip -q install -r requirements.lock && python plugin_scripts/deploy.py")
+
 # join command lines
 command_string="$( IFS=$'\n';  echo "${command[*]}" )"
 
@@ -109,5 +109,5 @@ fi
 # # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`
 DOCKERID=$(docker create "${args[@]}") # substitute any backticks
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"
-docker cp "${PLUGIN_DIR}/plugin_scripts/deploy.py" "${DOCKERID}:${workdir}/plugin_scripts/deploy.py"
+docker cp "${PLUGIN_DIR}/plugin_scripts" "${DOCKERID}:${workdir}/plugin_scripts"
 docker start -a "${DOCKERID}"
