@@ -1,15 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-PLUGIN_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)/.."
+PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
 
 rm -rf /tmp/service_account.json
 PIPELINE_FILE="/tmp/service_account.json"
 
 debug_mode="false"
-if [[ "${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false}" =~ (true|on|1) ]] ; then
-  echo "--- :hammer: Enabling debug mode"
-  debug_mode="true"
+if [[ ${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false} =~ (true|on|1) ]]; then
+	echo "--- :hammer: Enabling debug mode"
+	debug_mode="true"
 fi
 
 workdir="/workdir"
@@ -38,43 +38,43 @@ fi
 
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
-if [[ "${debug_mode}" = "true" ]] ; then
-  echo "Configuration:"
-  echo "GCP Project: ${gcp_project}"
-  echo "Dataset Schema Directory: ${dataset_schema_directory}"
-  echo "Docker Image: ${gcp_service_account}"
+if [[ ${debug_mode} == "true" ]]; then
+	echo "Configuration:"
+	echo "GCP Project: ${gcp_project}"
+	echo "Dataset Schema Directory: ${dataset_schema_directory}"
+	echo "Docker Image: ${gcp_service_account}"
 fi
 
 args=("-it" "--rm" "--init" "--workdir" "${workdir}")
 
 # Propagate all environment variables into the container
-if [[ -n "${BUILDKITE_ENV_FILE:-}" ]] ; then
-  # Read in the env file and convert to --env params for docker
-  # This is because --env-file doesn't support newlines or quotes per https://docs.docker.com/compose/env-file/#syntax-rules
-  while read -r var; do
-    args+=( --env "${var%%=*}" )
-  done < "$BUILDKITE_ENV_FILE"
+if [[ -n ${BUILDKITE_ENV_FILE:-} ]]; then
+	# Read in the env file and convert to --env params for docker
+	# This is because --env-file doesn't support newlines or quotes per https://docs.docker.com/compose/env-file/#syntax-rules
+	while read -r var; do
+		args+=(--env "${var%%=*}")
+	done <"$BUILDKITE_ENV_FILE"
 else
-  echo "🚨 Not propagating environment variables to container as \$BUILDKITE_ENV_FILE is not set"
+	echo '🚨 Not propagating environment variables to container as $BUILDKITE_ENV_FILE is not set'
 fi
 
 # Mount the buildkite-agent
-if [[ -z "${BUILDKITE_AGENT_BINARY_PATH:-}" ]] ; then
-  if ! command -v buildkite-agent >/dev/null 2>&1 ; then
-    echo "+++ 🚨 Failed to find buildkite-agent in PATH to mount into container"
-    exit 1
-  else
-    BUILDKITE_AGENT_BINARY_PATH=$(command -v buildkite-agent)
-  fi
+if [[ -z ${BUILDKITE_AGENT_BINARY_PATH:-} ]]; then
+	if ! command -v buildkite-agent >/dev/null 2>&1; then
+		echo "+++ 🚨 Failed to find buildkite-agent in PATH to mount into container"
+		exit 1
+	else
+		BUILDKITE_AGENT_BINARY_PATH=$(command -v buildkite-agent)
+	fi
 fi
 args+=(
-  "--env" "BUILDKITE_JOB_ID"
-  "--env" "BUILDKITE_BUILD_ID"
-  "--env" "BUILDKITE_AGENT_ACCESS_TOKEN"
-  "--env" "dataset_schema_directory=$dataset_schema_directory"
-  "--env" "gcp_project=$gcp_project"
-  "--env" "credentials=$(</tmp/service_account.json)"
-  "--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
+	"--env" "BUILDKITE_JOB_ID"
+	"--env" "BUILDKITE_BUILD_ID"
+	"--env" "BUILDKITE_AGENT_ACCESS_TOKEN"
+	"--env" "dataset_schema_directory=$dataset_schema_directory"
+	"--env" "gcp_project=$gcp_project"
+	"--env" "credentials=$(</tmp/service_account.json)"
+	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
 
 # Add the image in before the shell and command
@@ -90,20 +90,23 @@ display_command+=("${shell[@]}")
 command+=("pip -q install -r plugin_scripts/requirements.lock && python plugin_scripts/deploy.py")
 
 # join command lines
-command_string="$( IFS=$'\n';  echo "${command[*]}" )"
+command_string="$(
+	IFS=$'\n'
+	echo "${command[*]}"
+)"
 
 args+=("${command_string}")
 display_command+=("'${command_string}'")
 
-echo "--- :docker: Logging \"docker create\" command"
+echo '--- :docker: Logging "docker create" command'
 echo "$ docker create" >&2
 
 echo "--- :docker: Running command in ${image}"
 echo "$ ${display_command[*]}" >&2
 
-if [[ "${debug_mode}" = "true" ]] ; then
-  echo "docker create ${args[*]}" >&2
-  echo "docker cp \"${PWD}/.\" \"dockerContainerID:${workdir}\"" >&2
+if [[ ${debug_mode} == "true" ]]; then
+	echo "docker create ${args[*]}" >&2
+	echo "docker cp \"${PWD}/.\" \"dockerContainerID:${workdir}\"" >&2
 fi
 
 # # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`

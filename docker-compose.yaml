@@ -54,6 +54,7 @@ services:
   lock-requirements:
     <<: *bigquery-buildkite-plugin
     entrypoint: "/bin/bash"
+    user: root
     command: "docker/lock_requirements.sh"
 
 volumes:
