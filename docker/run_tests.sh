@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # only generate html locally
-pytest --cov deploy tests/test_deploy.py --cov-report html
+pytest --cov plugin_scripts/ tests/test_deploy.py --cov-report html
 
 echo "Running MyPy..."
 mypy plugin_scripts/deploy.py tests/test_deploy.py
