@@ -1,6 +1,6 @@
 import pytest
 
-import deploy
+from plugin_scripts import deploy
 
 
 @pytest.fixture

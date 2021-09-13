@@ -19,7 +19,7 @@ If the version number is not provided then the most recent version of the plugin
 ```yaml
 steps:
   - plugins:
-      - wayfair-incubator/bigquery#v0.1.0:
+      - wayfair-incubator/bigquery#v0.2.0:
           gcp_project: gcp-us-project
           dataset_schema_directory: schemas/gcp-us-project/dataset
 ```
@@ -39,14 +39,6 @@ Example: `gcp-us-project`
 The directory in your repository where are you storing the schemas for your tables and views.
 
 Example: `gcp-us-project/dataset_name`
-
-### `plugin_image_version` (optional, string)
-
-**ONLY to be used when testing feature branch changes to this plugin from another pipeline**
-
-The full hash for the latest commit to your feature branch for this plugin. This should match the plugin 'version' you are referencing in your test pipeline.
-
-Example: `1e602649cebf27b16dc45177ef1552b068fd2f8e`
 
 ## Secret
 

@@ -37,7 +37,7 @@ jobs:
           test-requirements: "true"
 
       - name: Run bandit
-        run: bandit --ini .bandit -r deploy.py
+        run: bandit --ini .bandit -r plugin_scripts/deploy.py
 
   black:
     runs-on: ubuntu-latest
@@ -55,7 +55,7 @@ jobs:
           test-requirements: "true"
 
       - name: Run black
-        run: black --check deploy.py tests/test_deploy.py
+        run: black --check plugin_scripts/deploy.py tests/test_deploy.py
 
   flake8:
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
           test-requirements: "true"
 
       - name: Run flake8
-        run: flake8 deploy.py tests/test_deploy.py
+        run: flake8 plugin_scripts/deploy.py tests/test_deploy.py
 
   isort:
     runs-on: ubuntu-latest
@@ -89,7 +89,7 @@ jobs:
           test-requirements: "true"
 
       - name: Run isort
-        run: isort --recursive --check-only deploy.py tests/test_deploy.py
+        run: isort --recursive --check-only plugin_scripts/deploy.py tests/test_deploy.py
 
   mypy:
     runs-on: ubuntu-latest
@@ -106,4 +106,4 @@ jobs:
           test-requirements: "true"
 
       - name: Run mypy
-        run: mypy deploy.py tests/test_deploy.py
+        run: mypy plugin_scripts/deploy.py tests/test_deploy.py

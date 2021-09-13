@@ -11,7 +11,7 @@ configuration:
       type: string
     gcp_service_account:
       type: string
-    plugin_image_version:
+    custom_image:
       type: string
   required:
     - gcp_project
