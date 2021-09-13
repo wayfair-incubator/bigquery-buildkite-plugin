@@ -4,12 +4,9 @@ on:
   push:
       branches: ["main"]
 
-env:
-  PYTHON_VERSION: "3.9.1"
-
 jobs:
-  py-test:
-    name: Buildkite Plugin Pytest
+  test:
+    name: Pytest
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -45,5 +42,6 @@ jobs:
       - name: Publish coverage results to Codecov
         uses: codecov/codecov-action@v2.0.3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage-${{ env.PYTHON_VERSION }}.xml
           fail_ci_if_error: true
