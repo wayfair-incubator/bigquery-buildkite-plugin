@@ -24,9 +24,9 @@ services:
     volumes:
       - "./hooks:/plugin"
 
-  bigquery-buildkite-plugin: &bigquery-buildkite-plugin
+  bigquery-buildkite-plugin:
     build:
-      dockerfile: "docker/service.dockerfile"
+      dockerfile: "docker/devbox.dockerfile"
       context: .
       args: *build_args
     image: wayfairossdev/bigquery-buildkite-plugin:${IMAGE_VERSION:-latest}
@@ -52,7 +52,7 @@ services:
     command: "docker/run_tests.sh --format-code"
 
   lock-requirements:
-    <<: *bigquery-buildkite-plugin
+    <<: *devbox
     entrypoint: "/bin/bash"
     user: root
     command: "docker/lock_requirements.sh"
