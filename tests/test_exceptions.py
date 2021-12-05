@@ -1,6 +1,9 @@
 import pytest
 
-from plugin_scripts.exceptions import DatasetSchemaDirectoryNonExistent, DeployFailed
+from plugin_scripts.exceptions import (
+    DatasetSchemaDirectoryNonExistent,
+    DeployFailed,
+)  # isort:skip
 
 
 @pytest.mark.parametrize(
