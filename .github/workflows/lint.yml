@@ -100,3 +100,4 @@ jobs:
         uses: jashparekh/mypy-action@v1
         with:
           path: "plugin_scripts/deploy.py tests/test_deploy.py"
+          requirement_files: "requirements.lock"
