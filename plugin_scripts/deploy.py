@@ -4,7 +4,7 @@ import sys
 
 from gbq import BigQuery
 
-from plugin_scripts.exceptions import DatasetSchemaDirectoryNonExistent, DeployFailed
+from .exceptions import DatasetSchemaDirectoryNonExistent, DeployFailed
 
 sys.tracebacklimit = 0
 
