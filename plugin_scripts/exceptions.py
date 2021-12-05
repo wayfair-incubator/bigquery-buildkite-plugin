@@ -1,4 +1,3 @@
-
 class DatasetSchemaDirectoryNonExistent(Exception):
     pass
 
