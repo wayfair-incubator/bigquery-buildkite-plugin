@@ -31,8 +31,7 @@ services:
     stdin_open: "true" # docker run -i
     tty: "true"        # docker run -t
     volumes:
-      - ./:/app:cached
-      - /tmp:/tmp
+      - "./:/app"
 
   # run all the tests and linting locally
   # - black & isort will format code to address issues
@@ -45,9 +44,6 @@ services:
     entrypoint: "/bin/bash"
     user: root
     command: "docker/lock_requirements.sh"
-    volumes:
-      - ./:/app:cached
-      - /tmp:/tmp
 
 volumes:
   home:
