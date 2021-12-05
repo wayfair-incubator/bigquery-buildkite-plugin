@@ -24,18 +24,6 @@ services:
     volumes:
       - "./hooks:/plugin"
 
-  bigquery-buildkite-plugin:
-    build:
-      dockerfile: "docker/devbox.dockerfile"
-      context: .
-      args: *build_args
-    image: wayfairossdev/bigquery-buildkite-plugin:${IMAGE_VERSION:-latest}
-    environment:
-      - gcp_project=wf-gcp-us-ae-ops-dev
-      - dataset_schema_directory=junk/test
-    volumes:
-      - "./:/app"
-
   devbox: &devbox
     build:
       dockerfile: "./docker/devbox.dockerfile"

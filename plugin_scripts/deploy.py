@@ -4,6 +4,8 @@ import sys
 
 from gbq import BigQuery
 
+from plugin_scripts.exceptions import DatasetSchemaNonExistent, DeployFailed
+
 sys.tracebacklimit = 0
 
 
@@ -18,7 +20,13 @@ def _validate_env_variables():
         raise Exception("Missing `credentials` config")
 
 
+def _validate_if_path_exists():
+    dataset_schema_directory = os.environ.get("dataset_schema_directory")
+    return os.path.isdir(dataset_schema_directory)
+
+
 def _deploy():
+    deploy_failed = False
     dataset_schema_directory = os.environ.get("dataset_schema_directory")
     credentials = os.environ.get("credentials")
     gcp_project = os.environ.get("gcp_project")
@@ -46,8 +54,15 @@ def _deploy():
                         )
     except Exception as e:
         print(f"Failed to deploy to Bigquery: {e}")
+        deploy_failed = True
+
+    if deploy_failed:
+        raise DeployFailed
 
 
 if __name__ == "__main__":
     _validate_env_variables()
-    _deploy()
+    if _validate_if_path_exists():
+        _deploy()
+    else:
+        raise DatasetSchemaNonExistent
