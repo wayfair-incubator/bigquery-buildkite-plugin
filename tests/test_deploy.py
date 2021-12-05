@@ -47,3 +47,15 @@ def test__validate_env_variables_all_variables_present(
 ):
     deploy._validate_env_variables()
     assert True
+
+
+def test__validate_if_path_exists_true(mocker, dataset_schema_directory):
+    os_mock = mocker.patch("plugin_scripts.deploy.os")
+    os_mock.path.isdir.return_value = True
+    assert deploy._validate_if_path_exists()
+
+
+def test__validate_if_path_exists_false(mocker, dataset_schema_directory):
+    os_mock = mocker.patch("plugin_scripts.deploy.os")
+    os_mock.path.isdir.return_value = False
+    assert not deploy._validate_if_path_exists()
