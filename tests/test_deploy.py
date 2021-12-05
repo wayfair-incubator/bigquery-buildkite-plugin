@@ -1,11 +1,7 @@
 import pytest
 
 from plugin_scripts import deploy
-
-from plugin_scripts.exceptions import (
-    DatasetSchemaDirectoryNonExistent,
-    DeployFailed,
-)  # isort:skip
+from plugin_scripts.exceptions import DatasetSchemaDirectoryNonExistent, DeployFailed
 
 
 @pytest.fixture

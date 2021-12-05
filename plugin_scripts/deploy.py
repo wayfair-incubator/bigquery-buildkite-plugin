@@ -4,10 +4,7 @@ import sys
 
 from gbq import BigQuery
 
-from plugin_scripts.exceptions import (
-    DatasetSchemaDirectoryNonExistent,
-    DeployFailed,
-)  # isort:skip
+from plugin_scripts.exceptions import DatasetSchemaDirectoryNonExistent, DeployFailed
 
 sys.tracebacklimit = 0
 
