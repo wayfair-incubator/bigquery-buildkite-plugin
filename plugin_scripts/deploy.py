@@ -4,15 +4,9 @@ import sys
 
 from gbq import BigQuery
 
+from pipeline_exceptions import DeployFailed, DatasetSchemaDirectoryNonExistent
+
 sys.tracebacklimit = 0
-
-
-class DatasetSchemaDirectoryNonExistent(Exception):
-    pass
-
-
-class DeployFailed(Exception):
-    pass
 
 
 def _validate_env_variables():
@@ -72,7 +66,3 @@ def main():
         _deploy()
     else:
         raise DatasetSchemaDirectoryNonExistent
-
-
-if __name__ == "__main__":
-    main()

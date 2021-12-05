@@ -87,7 +87,7 @@ display_command=()
 shell=("/bin/sh" "-e" "-c")
 args+=("${shell[@]}")
 display_command+=("${shell[@]}")
-command+=("pip -q install -r plugin_scripts/requirements.lock && python plugin_scripts/deploy.py")
+command+=("pip -q install -r plugin_scripts/requirements.lock && python plugin_scripts")
 
 # join command lines
 command_string="$(
