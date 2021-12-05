@@ -1,5 +1,5 @@
 
-class DatasetSchemaNonExistent(Exception):
+class DatasetSchemaDirectoryNonExistent(Exception):
     pass
 
 

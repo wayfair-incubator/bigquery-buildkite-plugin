@@ -4,7 +4,8 @@ import sys
 
 from gbq import BigQuery
 
-from plugin_scripts.exceptions import DatasetSchemaNonExistent, DeployFailed
+from plugin_scripts.exceptions import (DatasetSchemaDirectoryNonExistent,
+                                       DeployFailed)
 
 sys.tracebacklimit = 0
 
@@ -60,9 +61,13 @@ def _deploy():
         raise DeployFailed
 
 
-if __name__ == "__main__":
+def main():
     _validate_env_variables()
     if _validate_if_path_exists():
         _deploy()
     else:
-        raise DatasetSchemaNonExistent
+        raise DatasetSchemaDirectoryNonExistent
+
+
+if __name__ == "__main__":
+    main()

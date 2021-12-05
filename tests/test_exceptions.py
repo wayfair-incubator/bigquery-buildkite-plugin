@@ -1,7 +1,7 @@
 import pytest
 
 from plugin_scripts.exceptions import (
-    DatasetSchemaNonExistent,
+    DatasetSchemaDirectoryNonExistent,
     DeployFailed,
 )
 
@@ -9,7 +9,7 @@ from plugin_scripts.exceptions import (
 @pytest.mark.parametrize(
     "exception_object",
     [
-        DatasetSchemaNonExistent({}),
+        DatasetSchemaDirectoryNonExistent({}),
         DeployFailed({}),
     ],
 )
@@ -21,7 +21,7 @@ def test_exception_init(exception_object):
 @pytest.mark.parametrize(
     "exception_class",
     [
-        DatasetSchemaNonExistent,
+        DatasetSchemaDirectoryNonExistent,
         DeployFailed,
     ],
 )
