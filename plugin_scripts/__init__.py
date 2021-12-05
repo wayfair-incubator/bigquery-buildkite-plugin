@@ -1,4 +1,4 @@
-from deploy import main
+from .deploy import main
 
 
 if __name__ == "__main__":
