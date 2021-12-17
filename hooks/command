@@ -14,7 +14,7 @@ fi
 
 workdir="/workdir"
 
-default_image="python:3.10.0-buster"
+default_image="python:3.10.1-slim"
 image="${BUILDKITE_PLUGIN_BIGQUERY_CUSTOM_IMAGE:-$default_image}"
 
 if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
