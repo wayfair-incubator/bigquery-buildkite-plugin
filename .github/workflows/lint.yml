@@ -97,7 +97,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2.4.0
       - name: Run mypy
-        uses: jashparekh/mypy-action@a58c5f281029228d905c1577da4b74781799ea3c
+        uses: jashparekh/mypy-action@7e48fa397cef0d325b076f7178a693607c079006
         with:
           path: "plugin_scripts tests"
           requirement_files: "plugin_scripts/requirements.lock"
