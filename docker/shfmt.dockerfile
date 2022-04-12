@@ -12,7 +12,7 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-RUN GO111MODULE=on go get mvdan.cc/sh/v3/cmd/shfmt
+RUN GO111MODULE=on go get -u mvdan.cc/sh/v3/cmd/shfmt@latest
 
 FROM scratch
 
