@@ -12,6 +12,8 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
+RUN go mod init
+
 RUN GO111MODULE=on go get -u mvdan.cc/sh/v3/cmd/shfmt@latest
 
 FROM scratch
