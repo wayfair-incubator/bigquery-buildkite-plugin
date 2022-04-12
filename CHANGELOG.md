@@ -8,36 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Updated
 
-Docker image for pipeline
-Use locked dependencies for pipeline
+- Update dependencies
 
 ## [0.4.0] - 2021-12-16
 
 ### Updated
 
-Docker image for pipeline
-Use locked dependencies for pipeline
+- Docker image for pipeline
+- Use locked dependencies for pipeline
 
 ## [0.3.0] - 2021-12-05
 
 ### Added
 
-Fail pipeline if deploy fails for at least one schema
+- Fail pipeline if deploy fails for at least one schema
 
 ## [0.2.1] - 2021-11-28
 
 ### Added
 
-Inline Docker
+- Inline Docker
 
 ## [0.2.0] - 2021-09-12
 
 ### Added
 
-Inline Docker
+- Inline Docker
 
 ## [0.1.0] - 2021-07-14
 
 ### Added
 
-Initial Release
+- Initial Release
