@@ -19,7 +19,7 @@ If the version number is not provided then the most recent version of the plugin
 ```yaml
 steps:
   - plugins:
-      - wayfair-incubator/bigquery#v0.3.0:
+      - wayfair-incubator/bigquery#v0.5.0:
           gcp_project: gcp-us-project
           dataset_schema_directory: schemas/gcp-us-project/dataset
 ```
