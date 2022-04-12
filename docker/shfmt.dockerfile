@@ -1,4 +1,4 @@
-FROM golang:1.18.0 AS gobuilder
+FROM mvdan/shfmt AS gobuilder
 
 ENV USER=formatter
 ENV UID=10001
@@ -12,9 +12,7 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
-RUN go mod init
-
-RUN GO111MODULE=on go get -u mvdan.cc/sh/v3/cmd/shfmt@latest
+RUN GO111MODULE=on go install mvdan.cc/sh/v3/cmd/shfmt@latest
 
 FROM scratch
 
