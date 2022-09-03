@@ -44,7 +44,7 @@ def _deploy():
                     )
                     if file_name_and_extension[1] == "sql":
                         schema = contents.read()
-                        bq.create_or_update_view(
+                        bq.execute(
                             gcp_project, dataset, file_name_and_extension[0], schema
                         )
                     else:
