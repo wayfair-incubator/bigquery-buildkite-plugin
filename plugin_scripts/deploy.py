@@ -43,9 +43,9 @@ def _deploy():
                         f"Updating schema for {gcp_project}.{dataset}.{file_name_and_extension[0]}"
                     )
                     if file_name_and_extension[1] == "sql":
-                        schema = contents.read()
+                        query = contents.read()
                         bq.execute(
-                            gcp_project, dataset, file_name_and_extension[0], schema
+                            query
                         )
                     else:
                         schema = json.loads(contents.read())
