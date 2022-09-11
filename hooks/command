@@ -99,7 +99,7 @@ args+=(
 	"--env" "BUILDKITE_AGENT_ACCESS_TOKEN"
 	"--env" "dataset_schema_directory=$dataset_schema_directory"
 	"--env" "gcp_project=$gcp_project"
-	"--env" "updated_files=$files_changed_in_current_branch"
+	"--env" "execute_only_changed_files=$execute_only_changed_files"
 	"--env" "credentials=$(</tmp/service_account.json)"
 	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
