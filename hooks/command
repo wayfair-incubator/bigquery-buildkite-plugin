@@ -118,7 +118,7 @@ display_command=()
 shell=("/bin/sh" "-e" "-c")
 args+=("${shell[@]}")
 display_command+=("${shell[@]}")
-command+=("export execute_only_changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g') && pip -q install -r plugin_scripts/requirements.lock && python -m plugin_scripts.__init__")
+command+=("export updated_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g') && pip -q install -r plugin_scripts/requirements.lock && python -m plugin_scripts.__init__")
 
 # join command lines
 command_string="$(
