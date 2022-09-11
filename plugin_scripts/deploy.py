@@ -55,6 +55,7 @@ def _deploy():
 
 
 def _deploy_changes_files(bq: BigQuery, gcp_project: str, updated_files: List[str]):
+    print(f"Deploying following files: {updated_files}")
     deploy_failed = False
     for file in updated_files:
         dataset = file.split("/")[-2]
