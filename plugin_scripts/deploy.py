@@ -35,7 +35,7 @@ def _deploy():
     gcp_project = os.environ.get("gcp_project")
 
     updated_files = os.environ.get("updated_files")
-    execute_only_changed_files = os.environ.get("execute_only_changed_files", "False")
+    execute_only_changed_files = os.environ.get("execute_only_changed_files", "true")
 
     try:
         bq = BigQuery(credentials, gcp_project)
