@@ -59,7 +59,7 @@ if [ -z "${gcp_service_account}" ]; then
 	exit 1
 fi
 
-execute_only_changed_files=$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-"true"
+execute_only_changed_files=${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-1}
 
 files_changed_in_current_branch = $(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g')
 
