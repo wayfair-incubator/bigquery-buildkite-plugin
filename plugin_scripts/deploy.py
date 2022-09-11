@@ -66,11 +66,12 @@ def _deploy_from_directory(
     for root, dirs, files in os.walk(dataset_schema_directory):
         dataset = root.split("/").pop()
         for file in files:
+            full_file_path = f"{dataset_schema_directory}/{file}"
             if (
                 execute_only_changed_files
-                and f"{dataset_schema_directory}/{file}" not in updated_files
+                and full_file_path not in updated_files
             ):
-                break
+                continue
 
             with open(f"{root}/{file}", "r") as contents:
                 try:
