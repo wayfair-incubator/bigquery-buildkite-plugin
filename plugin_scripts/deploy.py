@@ -68,7 +68,7 @@ def _deploy_changes_files(bq: BigQuery, gcp_project: str, updated_files: List[st
                         contents=contents,
                         file_name_and_extension=file_name_and_extension,
                     )
-                else:
+                elif file_name_and_extension[1] == "json":
                     _deploy_json_structure(
                         bq=bq,
                         contents=contents,
@@ -97,7 +97,7 @@ def _deploy_from_directory(bq: BigQuery, gcp_project: str, root_folder_path: str
                             contents=contents,
                             file_name_and_extension=file_name_and_extension,
                         )
-                    else:
+                    elif file_name_and_extension[1] == "json":
                         _deploy_json_structure(
                             bq=bq,
                             contents=contents,
