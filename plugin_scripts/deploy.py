@@ -36,6 +36,7 @@ def _deploy():
 
     updated_files = os.environ.get("updated_files")
     execute_only_changed_files = os.environ.get("execute_only_changed_files", "true")
+    print(f"{execute_only_changed_files}, {_str2bool(execute_only_changed_files)}")
 
     try:
         bq = BigQuery(credentials, gcp_project)
