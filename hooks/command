@@ -59,7 +59,7 @@ if [ -z "${gcp_service_account}" ]; then
 	exit 1
 fi
 
-if [ ! "$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES" ];then
+if [ ! "$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-" ];then
    execute_only_changed_files=1
 fi
 
