@@ -34,20 +34,20 @@ def _deploy():
     credentials = os.environ.get("credentials")
     gcp_project = os.environ.get("gcp_project")
 
-    updated_files = os.environ.get("updated_files")
-    execute_only_changed_files = os.environ.get("execute_only_changed_files", "true")
-    print(f"{execute_only_changed_files}, {_str2bool(execute_only_changed_files)}")
+    updated_files = os.environ.get("updated_files", "").split(",")
+    execute_only_changed_files = _str2bool(
+        os.environ.get("execute_only_changed_files", "true")
+    )
 
     try:
         bq = BigQuery(credentials, gcp_project)
-        if _str2bool(execute_only_changed_files):
-            deploy_failed = _deploy_changes_files(
-                bq, gcp_project, updated_files.split(",")
-            )
-        else:
-            deploy_failed = _deploy_from_directory(
-                bq, gcp_project, dataset_schema_directory
-            )
+        deploy_failed = _deploy_from_directory(
+            bq,
+            gcp_project,
+            dataset_schema_directory,
+            updated_files,
+            execute_only_changed_files,
+        )
     except Exception:
         deploy_failed = True
 
@@ -55,41 +55,23 @@ def _deploy():
         raise DeployFailed
 
 
-def _deploy_changes_files(bq: BigQuery, gcp_project: str, updated_files: List[str]):
-    print(f"Deploying following files: {updated_files}")
+def _deploy_from_directory(
+    bq: BigQuery,
+    gcp_project: str,
+    dataset_schema_directory: str,
+    updated_files: List[str],
+    execute_only_changed_files: bool,
+):
     deploy_failed = False
-    for file in updated_files:
-        dataset = file.split("/")[-2]
-        structure_id = file.split("/").pop()
-        with open(file, "r") as contents:
-            try:
-                file_name_and_extension = structure_id.split(".")
-                if file_name_and_extension[1] == "sql":
-                    _deploy_sql_script(
-                        bq=bq,
-                        contents=contents,
-                        file_name_and_extension=file_name_and_extension,
-                    )
-                elif file_name_and_extension[1] == "json":
-                    _deploy_json_structure(
-                        bq=bq,
-                        contents=contents,
-                        dataset=dataset,
-                        file_name_and_extension=file_name_and_extension,
-                        gcp_project=gcp_project,
-                    )
-            except Exception as e:
-                print(f"Failed to deploy to Bigquery: {str(e)}")
-                deploy_failed = True
-
-    return deploy_failed
-
-
-def _deploy_from_directory(bq: BigQuery, gcp_project: str, root_folder_path: str):
-    deploy_failed = False
-    for root, dirs, files in os.walk(root_folder_path):
+    for root, dirs, files in os.walk(dataset_schema_directory):
         dataset = root.split("/").pop()
         for file in files:
+            if (
+                execute_only_changed_files
+                and f"{dataset_schema_directory}/{file}" not in updated_files
+            ):
+                break
+
             with open(f"{root}/{file}", "r") as contents:
                 try:
                     file_name_and_extension = file.split(".")
