@@ -59,7 +59,11 @@ if [ -z "${gcp_service_account}" ]; then
 	exit 1
 fi
 
-execute_only_changed_files=${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false}
+if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE}" ]; then
+	execute_only_changed_files=1
+else
+  execute_only_changed_files=$BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE
+fi
 
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
