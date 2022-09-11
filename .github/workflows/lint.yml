@@ -96,8 +96,14 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-      - name: Run mypy
-        uses: jashparekh/mypy-action@v3
+      - uses: actions/setup-python@v4
         with:
-          path: "plugin_scripts tests"
-          requirement_files: "plugin_scripts/requirements.lock"
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          requirements: "true"
+          test-requirements: "true"
+
+      - name: Run mypy
+        run: mypy plugin_scripts/deploy.py tests/test_deploy.py
