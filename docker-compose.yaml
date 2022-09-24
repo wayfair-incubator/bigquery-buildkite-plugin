@@ -24,8 +24,8 @@ services:
     build:
       dockerfile: "./docker/devbox.dockerfile"
       context: "."
-    stdin_open: "true" # docker run -i
-    tty: "true"        # docker run -t
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
     volumes:
       - "./:/app"
 

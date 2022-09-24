@@ -1,4 +1,4 @@
-FROM python:3.11.0b3-slim
+FROM python:3.10.4-buster
 
 ARG _USER="lilchz"
 ARG _UID="1001"
@@ -17,7 +17,6 @@ ENV GID ${_GID}
 ENV HOME /home/${_USER}
 ENV PATH "${HOME}/.local/bin/:${PATH}"
 ENV PIP_NO_CACHE_DIR "true"
-
 
 RUN mkdir /app && chown ${UID}:${GID} /app
 

@@ -5,7 +5,7 @@ on:
       branches: ["main"]
 
 env:
-  PYTHON_VERSION: "3.10"
+  PYTHON_VERSION: "3.10.6"
 
 jobs:
   shfmt:
@@ -96,8 +96,14 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-      - name: Run mypy
-        uses: jashparekh/mypy-action@v3
+      - uses: actions/setup-python@v4
         with:
-          path: "plugin_scripts tests"
-          requirement_files: "plugin_scripts/requirements.lock"
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          requirements: "true"
+          test-requirements: "true"
+
+      - name: Run mypy
+        run: mypy --ignore-missing-imports plugin_scripts/deploy.py tests/test_deploy.py
