@@ -59,9 +59,9 @@ if [ -z "${gcp_service_account}" ]; then
 	exit 1
 fi
 
-if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES}" ]; then
-	echo "ERROR: dataset schema (dataset_schema_directory) not set"
-	exit 1
+execute_only_changed_files=0
+if [[ ${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-false} =~ (true|on|1) ]]; then
+	execute_only_changed_files=1
 fi
 
 #if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES}" ]; then
