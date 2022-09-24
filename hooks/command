@@ -59,11 +59,17 @@ if [ -z "${gcp_service_account}" ]; then
 	exit 1
 fi
 
-if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES}" ]; then
-	execute_only_changed_files=1
+if [ $BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES -ge 1 ] && [ -n "$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES" ] then
+  execute_only_changed_files=$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES
 else
-	execute_only_changed_files=$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES
+  execute_only_changed_files=1
 fi
+#
+#if [ -z "${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES}" ]; then
+#	execute_only_changed_files=1
+#else
+#	execute_only_changed_files=$BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES
+#fi
 
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
