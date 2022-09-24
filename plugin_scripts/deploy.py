@@ -35,7 +35,7 @@ def _deploy():
     gcp_project = os.environ.get("gcp_project")
 
     updated_files = os.environ.get("updated_files", "").split(",")
-    execute_only_changed_files = _str2bool(
+    execute_only_changed_files = _str_to_bool(
         os.environ.get("execute_only_changed_files", "true")
     )
 
@@ -119,7 +119,7 @@ def _deploy_sql_script(
     bq.execute(query=query)
 
 
-def _str2bool(value: str):
+def _str_to_bool(value: str):
     return value.lower() in ("yes", "true", "t", "1")
 
 
