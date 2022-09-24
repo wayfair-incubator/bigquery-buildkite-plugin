@@ -106,4 +106,4 @@ jobs:
           test-requirements: "true"
 
       - name: Run mypy
-        run: mypy plugin_scripts/deploy.py tests/test_deploy.py
+        run: mypy --ignore-missing-imports plugin_scripts/deploy.py tests/test_deploy.py
