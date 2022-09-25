@@ -2,7 +2,7 @@ cachetools==5.2.0
 certifi==2022.6.15
 charset-normalizer==2.1.1
 click==8.1.3
-dataclasses==0.6
+dataclasses==0.8
 gbq==1.0.0
 google-api-core==2.10.0
 google-auth==2.11.0
