@@ -24,6 +24,7 @@ services:
     build:
       dockerfile: "./docker/devbox.dockerfile"
       context: "."
+    image: "bigquery-plugin-devbox"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
     volumes:
