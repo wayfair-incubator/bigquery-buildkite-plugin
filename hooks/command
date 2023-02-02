@@ -71,8 +71,10 @@ default_current_branch="non_master"
 current_branch="${BUILDKITE_BRANCH:-$default_current_branch}"
 
 changed_files=""
+is_default_branch="false"
 if [[ ${prod_build_branch} == "${current_branch}" ]]; then
 	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin~0 | xargs | sed -e 's/ /,/g')
+	is_default_branch="true"
 else
 	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g')
 fi
@@ -85,6 +87,7 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "Dataset Schema Directory: ${dataset_schema_directory}"
 	echo "Execute Only Changed Files: ${execute_only_changed_files}"
 	echo "Changed Files: ${changed_files}"
+	echo "Is Default Branch: ${is_default_branch}"
 	echo "Docker Image: ${image}"
 fi
 
