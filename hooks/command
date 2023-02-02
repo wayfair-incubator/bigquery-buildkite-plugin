@@ -64,6 +64,21 @@ if [[ ${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-false} =~ (true|on
 	execute_only_changed_files=1
 fi
 
+default_prod_build_branch="master"
+prod_build_branch="${BUILDKITE_PLUGIN_BIGQUERY_PROD_BUILD_BRANCH:-$default_prod_build_branch}"
+
+default_current_branch="non_master"
+current_branch="${BUILDKITE_BRANCH:-$default_current_branch}"
+
+changed_files=""
+is_default_branch="false"
+if [[ ${prod_build_branch} == "${current_branch}" ]]; then
+	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin~0 | xargs | sed -e 's/ /,/g')
+	is_default_branch="true"
+else
+	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g')
+fi
+
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
 if [[ ${debug_mode} == "true" ]]; then
@@ -71,13 +86,15 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "GCP Project: ${gcp_project}"
 	echo "Dataset Schema Directory: ${dataset_schema_directory}"
 	echo "Execute Only Changed Files: ${execute_only_changed_files}"
+	echo "Changed Files: ${changed_files}"
+	echo "Is Default Branch: ${is_default_branch}"
 	echo "Docker Image: ${image}"
 fi
 
 args=("-it" "--rm" "--init" "--workdir" "${workdir}")
 
 # Propagate all environment variables into the container
-if [[ -n ${BUILDKITE_ENV_FILE:-} ]]; then
+if [[ -n ${BUILDKITE_ENV_FILE:=""} ]]; then
 	# Read in the env file and convert to --env params for docker
 	# This is because --env-file doesn't support newlines or quotes per https://docs.docker.com/compose/env-file/#syntax-rules
 	while read -r var; do
@@ -88,7 +105,7 @@ else
 fi
 
 # Mount the buildkite-agent
-if [[ -z ${BUILDKITE_AGENT_BINARY_PATH:-} ]]; then
+if [[ -z ${BUILDKITE_AGENT_BINARY_PATH:=""} ]]; then
 	if ! command -v buildkite-agent >/dev/null 2>&1; then
 		echo "+++ 🚨 Failed to find buildkite-agent in PATH to mount into container"
 		exit 1
@@ -117,7 +134,7 @@ display_command=()
 shell=("/bin/sh" "-e" "-c")
 args+=("${shell[@]}")
 display_command+=("${shell[@]}")
-command+=("export updated_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g') && pip -q install -r plugin_scripts/requirements.lock && python -m plugin_scripts.__init__")
+command+=("export updated_files=${changed_files} && pip -q install -r plugin_scripts/requirements.lock && python -m plugin_scripts.__init__")
 
 # join command lines
 command_string="$(

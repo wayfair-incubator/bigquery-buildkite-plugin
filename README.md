@@ -40,6 +40,14 @@ The directory in your repository where are you storing the schemas for your tabl
 
 Example: `gcp-us-project/dataset_name`
 
+### `prod_build_branch` (optional, string)
+
+Default branch for the repo.
+
+Example: `main`
+
+Default: `master`
+
 ### `execute_only_changed_files` (optional, string)
 
 Whether to execute just the files that changed in a directory or not.
