@@ -91,7 +91,7 @@ fi
 args=("-it" "--rm" "--init" "--workdir" "${workdir}")
 
 # Propagate all environment variables into the container
-if [[ -n ${BUILDKITE_ENV_FILE:-""} ]]; then
+if [[ -n ${BUILDKITE_ENV_FILE:=""} ]]; then
 	# Read in the env file and convert to --env params for docker
 	# This is because --env-file doesn't support newlines or quotes per https://docs.docker.com/compose/env-file/#syntax-rules
 	while read -r var; do
@@ -102,7 +102,7 @@ else
 fi
 
 # Mount the buildkite-agent
-if [[ -z ${BUILDKITE_AGENT_BINARY_PATH:-""} ]]; then
+if [[ -z ${BUILDKITE_AGENT_BINARY_PATH:=""} ]]; then
 	if ! command -v buildkite-agent >/dev/null 2>&1; then
 		echo "+++ 🚨 Failed to find buildkite-agent in PATH to mount into container"
 		exit 1
