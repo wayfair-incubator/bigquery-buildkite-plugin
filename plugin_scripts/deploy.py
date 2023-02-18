@@ -38,6 +38,9 @@ def _deploy():
     execute_only_changed_files = _str_to_bool(
         os.environ.get("execute_only_changed_files", "true")
     )
+    fail_pipeline_on_first_exception = _str_to_bool(
+        os.environ.get("fail_pipeline_on_first_exception", "true")
+    )
 
     try:
         bq = BigQuery(credentials, gcp_project)
@@ -47,6 +50,7 @@ def _deploy():
             dataset_schema_directory,
             updated_files,
             execute_only_changed_files,
+            fail_pipeline_on_first_exception,
         )
     except Exception:
         deploy_failed = True
@@ -61,7 +65,8 @@ def _deploy_from_directory(
     dataset_schema_directory: str,
     updated_files: List[str],
     execute_only_changed_files: bool,
-):
+    fail_pipeline_on_first_exception: bool,
+) -> bool:
     deploy_failed = False
     for root, dirs, files in os.walk(dataset_schema_directory):
         dataset = root.split("/").pop()
@@ -90,6 +95,9 @@ def _deploy_from_directory(
                 except Exception as e:
                     print(f"Failed to deploy to Bigquery: {str(e)}")
                     deploy_failed = True
+
+                    if fail_pipeline_on_first_exception:
+                        return deploy_failed
 
     return deploy_failed
 

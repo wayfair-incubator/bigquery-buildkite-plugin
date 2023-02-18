@@ -79,6 +79,9 @@ else
 	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g')
 fi
 
+default_fail_pipeline_on_first_exception="true"
+fail_pipeline_on_first_exception="${BUILDKITE_PLUGIN_BIGQUERY_DEFAULT_FAIL_PIPELINE_ON_FIRST_EXCEPTION:-$default_fail_pipeline_on_first_exception}"
+
 echo "$gcp_service_account" >"$PIPELINE_FILE"
 
 if [[ ${debug_mode} == "true" ]]; then
@@ -86,6 +89,7 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "GCP Project: ${gcp_project}"
 	echo "Dataset Schema Directory: ${dataset_schema_directory}"
 	echo "Execute Only Changed Files: ${execute_only_changed_files}"
+	echo "Fail Pipeline on First Exception: ${fail_pipeline_on_first_exception}"
 	echo "Changed Files: ${changed_files}"
 	echo "Is Default Branch: ${is_default_branch}"
 	echo "Docker Image: ${image}"
@@ -120,6 +124,7 @@ args+=(
 	"--env" "dataset_schema_directory=$dataset_schema_directory"
 	"--env" "gcp_project=$gcp_project"
 	"--env" "execute_only_changed_files=$execute_only_changed_files"
+	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
 	"--env" "credentials=$(</tmp/service_account.json)"
 	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
