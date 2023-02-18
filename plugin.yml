@@ -14,7 +14,9 @@ configuration:
     prod_build_branch:
       type: string
     execute_only_changed_files:
-      type: string
+      type: boolean
+    fail_pipeline_on_first_exception:
+      type: boolean
     custom_image:
       type: string
   required:
