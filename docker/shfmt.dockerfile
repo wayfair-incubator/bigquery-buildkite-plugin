@@ -1,4 +1,4 @@
-FROM golang:1.19.4 AS gobuilder
+FROM golang:1.20.3 AS gobuilder
 
 ENV USER=formatter
 ENV UID=10001
