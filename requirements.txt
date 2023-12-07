@@ -5,7 +5,7 @@ gbq==1.0.1
 google-api-core==2.11.0
 google-auth==2.15.0
 google-cloud-bigquery==3.4.1
-google-cloud-core==2.3.2
+google-cloud-core==2.4.1
 google-crc32c==1.5.0
 google-resumable-media==2.4.0
 googleapis-common-protos==1.57.0
