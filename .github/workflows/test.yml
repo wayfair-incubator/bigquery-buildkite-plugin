@@ -46,7 +46,7 @@ jobs:
         if: ${{ always() }}
 
       - name: Publish coverage results to Codecov
-        uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378 # v3.1.0
+        uses: codecov/codecov-action@f30e4959ba63075080d4f7f90cacc18d9f3fafd7 # v4.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage-${{ env.PYTHON_VERSION }}.xml
