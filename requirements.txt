@@ -1,4 +1,4 @@
-cachetools==5.2.0
+cachetools==5.3.3
 certifi==2022.12.7
 charset-normalizer==2.1.1
 gbq==1.0.1
