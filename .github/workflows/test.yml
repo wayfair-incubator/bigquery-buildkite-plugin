@@ -45,9 +45,9 @@ jobs:
         # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
 
-      - name: Publish coverage results to Codecov
-        uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378 # v3.1.0
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: coverage-${{ env.PYTHON_VERSION }}.xml
-          fail_ci_if_error: true
+      # - name: Publish coverage results to Codecov
+      #   uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378 # v3.1.0
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     file: coverage-${{ env.PYTHON_VERSION }}.xml
+      #     fail_ci_if_error: true
