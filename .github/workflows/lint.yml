@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
-      - run: docker-compose run --rm shfmt
+      - run: docker compose run --rm shfmt
 
   lint:
     name: Lint bash and markdown
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
-      - run: docker-compose run --rm lint
+      - run: docker compose run --rm lint
 
   bandit:
     runs-on: ubuntu-latest
