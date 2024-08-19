@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Updated 
 
-- Updated gbq dependency to 1.0.5
+- Updated gbq library dependency to 1.0.5
 
 ## [1.2.0] - 2023-02-18
 
