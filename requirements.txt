@@ -2,7 +2,7 @@ cachetools==5.2.0
 certifi==2022.12.7
 charset-normalizer==2.1.1
 gbq==1.0.5
-google-api-core==2.11.0
+google-api-core==2.23.0
 google-auth==2.15.0
 google-cloud-bigquery==3.4.1
 google-cloud-core==2.3.2
