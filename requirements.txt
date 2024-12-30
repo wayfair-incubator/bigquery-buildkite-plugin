@@ -11,7 +11,7 @@ google-resumable-media==2.4.0
 googleapis-common-protos==1.57.0
 grpcio==1.51.1
 grpcio-status==1.51.1
-idna==3.4
+idna==3.10
 packaging==21.3
 pip==22.0.4
 proto-plus==1.22.1
