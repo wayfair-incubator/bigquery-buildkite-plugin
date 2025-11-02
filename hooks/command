@@ -175,7 +175,7 @@ args+=(
 	"--env" "gcp_project=$gcp_project"
 	"--env" "execute_only_changed_files=$execute_only_changed_files"
 	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
-	"--env" "credentials=$(</tmp/service_account.json)"
+	"--env" "credentials=$(<"$PIPELINE_FILE")"
 	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
 
