@@ -1,4 +1,4 @@
-version: '3.5'
+version: "3.9"
 
 services:
   test:
@@ -31,10 +31,30 @@ services:
       - "./:/app"
 
   # run all the tests and linting locally
-  # - black & isort will format code to address issues
+  # - ruff will format code to address issues
   py-test:
     <<: *devbox
     command: "docker/run_tests.sh --format-code"
+
+  # Run ruff format
+  ruff-format:
+    <<: *devbox
+    command: "ruff format plugin_scripts tests"
+
+  # Run ruff linting with fixes
+  ruff-lint:
+    <<: *devbox
+    command: "ruff check --fix plugin_scripts tests"
+
+  # Run ruff check only (no fixes)
+  ruff-check:
+    <<: *devbox
+    command: "ruff check plugin_scripts tests"
+
+  # Run mypy type checking
+  mypy:
+    <<: *devbox
+    command: "mypy plugin_scripts tests"
 
   lock-requirements:
     <<: *devbox

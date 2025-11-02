@@ -1,24 +1,33 @@
 name: "BigQuery Buildkite Plugin"
-description: "This Buildkite plugin can be used to deploy tables/views schemas to BigQuery"
+description: "Deploy BigQuery table/view schemas and SQL scripts using Python 3.14 and the gbq library"
 author: "Jash Parekh <jash389@gmail.com>"
 requirements:
   - bash
+  - docker
+  - git
 configuration:
   properties:
     gcp_project:
       type: string
+      description: "GCP project ID where BigQuery resources will be deployed"
     dataset_schema_directory:
       type: string
-    gcp_service_account:
-      type: string
+      description: "Directory path containing schema files (JSON for tables/views, SQL for queries)"
     prod_build_branch:
       type: string
+      description: "Production branch name for determining deployment strategy (default: master)"
     execute_only_changed_files:
       type: boolean
+      description: "Only process files that changed in the current commit (default: true)"
     fail_pipeline_on_first_exception:
       type: boolean
+      description: "Stop deployment immediately on first error (default: true)"
     custom_image:
       type: string
+      description: "Custom Docker image to use for deployment (default: python:3.14-slim)"
+    debug_mode:
+      type: boolean
+      description: "Enable verbose debug logging for troubleshooting (default: false)"
   required:
     - gcp_project
     - dataset_schema_directory

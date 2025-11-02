@@ -1,0 +1,68 @@
+[project]
+name = "bigquery-buildkite-plugin"
+version = "0.1.0"
+description = "Buildkite plugin for BigQuery deployments"
+requires-python = ">=3.14"
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+# Enable the following rule categories:
+# E: pycodestyle errors
+# F: Pyflakes
+# I: isort (import sorting)
+# N: pep8-naming
+# UP: pyupgrade
+# B: flake8-bugbear
+# S: flake8-bandit (security)
+# C4: flake8-comprehensions
+# PTH: flake8-use-pathlib
+select = ["E", "F", "I", "N", "UP", "B", "S", "C4", "PTH"]
+
+# Ignore specific rules
+ignore = [
+    "S101",  # Use of assert detected (equivalent to bandit's B101 skip)
+    "N818",  # Exception name should end with Error (backward compatibility)
+    "PTH112",  # os.path.isdir -> Path.is_dir (can be done in future refactor)
+    "PTH123",  # open() -> Path.open() (can be done in future refactor)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",  # Allow asserts in tests
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+ignore_missing_imports = true
+python_version = "3.14"
+
+[tool.pytest.ini_options]
+addopts = "--verbose --cov=plugin_scripts --cov-report xml:/tmp/coverage.xml --cov-report term-missing"
+python_files = "tests/*.py"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["plugin_scripts"]
+data_file = "/tmp/coverage_data"
+branch = true
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

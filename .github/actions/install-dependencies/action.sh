@@ -1,14 +1,15 @@
 set -euo pipefail
 
-echo "Ensuring pip is up to date"
-python -m pip install --upgrade pip
+echo "Installing uv"
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.cargo/bin:$PATH"
 
 if [[ "${INSTALL_REQUIREMENTS}" == "true"  ]]; then
   echo "Installing code requirements"
-  pip install -r plugin_scripts/requirements.lock
+  uv pip install --system -r plugin_scripts/requirements.lock
 fi
 
 if [[ "${INSTALL_TEST_REQUIREMENTS}" == "true"  ]]; then
   echo "Installing test requirements"
-  pip install -r requirements-test.txt
+  uv pip install --system -r requirements-test.txt
 fi

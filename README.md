@@ -124,6 +124,34 @@ To execute tests locally (requires that `docker` and `docker-compose` are instal
 docker-compose run test
 ```
 
+### Development Commands
+
+The project uses `uv` for dependency management and `ruff` for linting/formatting.
+
+```bash
+# Run all tests and linting with auto-formatting
+docker-compose run --rm py-test
+
+# Run tests only
+docker-compose run --rm devbox pytest
+
+# Run ruff format (auto-fix formatting issues)
+docker-compose run --rm ruff-format
+
+# Run ruff linting with auto-fix
+docker-compose run --rm ruff-lint
+
+# Run ruff check only (no auto-fix)
+docker-compose run --rm ruff-check
+
+# Run mypy type checking
+docker-compose run --rm mypy
+
+# Lock dependencies after updating requirements.txt
+docker-compose run --rm lock-requirements
+docker-compose build devbox
+```
+
 ## Credits
 
 This plugin was originally written by [Jash Parekh](https://github.com/jashparekh) for Wayfair.

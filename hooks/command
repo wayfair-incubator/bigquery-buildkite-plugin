@@ -26,8 +26,12 @@ function retry {
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
 
-rm -rf /tmp/service_account.json
-PIPELINE_FILE="/tmp/service_account.json"
+# Create secure temporary file for credentials
+PIPELINE_FILE=$(mktemp)
+chmod 600 "$PIPELINE_FILE"
+
+# Ensure cleanup on exit, error, interrupt, or termination
+trap 'rm -f "$PIPELINE_FILE"' EXIT ERR INT TERM
 
 debug_mode="false"
 if [[ ${BUILDKITE_PLUGIN_BIGQUERY_DEBUG_MODE:-false} =~ (true|on|1) ]]; then
@@ -37,7 +41,7 @@ fi
 
 workdir="/workdir"
 
-default_image="python:3.10.1-slim"
+default_image="python:3.14-slim"
 image="${BUILDKITE_PLUGIN_BIGQUERY_CUSTOM_IMAGE:-$default_image}"
 
 if [ -z "$BUILDKITE_PLUGIN_BIGQUERY_GCP_PROJECT" ]; then
@@ -70,13 +74,59 @@ prod_build_branch="${BUILDKITE_PLUGIN_BIGQUERY_PROD_BUILD_BRANCH:-$default_prod_
 default_current_branch="non_master"
 current_branch="${BUILDKITE_BRANCH:-$default_current_branch}"
 
+# Get changed files with proper error handling and absolute paths
 changed_files=""
 is_default_branch="false"
+
 if [[ ${prod_build_branch} == "${current_branch}" ]]; then
-	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin~0 | xargs | sed -e 's/ /,/g')
 	is_default_branch="true"
+	echo "--- :git: Detecting changed files on default branch (${current_branch})"
+
+	# For default branch, compare with parent commit
+	if git rev-parse HEAD^ >/dev/null 2>&1; then
+		raw_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r HEAD^..HEAD 2>/dev/null || echo "")
+	else
+		# First commit, use all files
+		echo "⚠️  First commit detected, will process all files"
+		raw_files=""
+	fi
 else
-	changed_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r origin..HEAD | xargs | sed -e 's/ /,/g')
+	echo "--- :git: Detecting changed files on feature branch (${current_branch})"
+
+	# For feature branches, compare with origin base branch
+	base_branch="origin/${prod_build_branch}"
+	if git rev-parse --verify "$base_branch" >/dev/null 2>&1; then
+		# Use three-dot syntax for merge-base comparison
+		raw_files=$(git diff --diff-filter=ABMRT --name-only "${base_branch}...HEAD" 2>/dev/null || echo "")
+	else
+		echo "⚠️  Warning: Could not find base branch $base_branch"
+		echo "⚠️  Falling back to comparing with HEAD^"
+		raw_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r HEAD^..HEAD 2>/dev/null || echo "")
+	fi
+fi
+
+# Convert relative paths to absolute paths and format as comma-separated list
+if [[ -n $raw_files ]]; then
+	abs_changed_files=""
+	while IFS= read -r file; do
+		if [[ -n $file ]]; then
+			# Convert to absolute path
+			if [[ -e $file ]]; then
+				abs_path="$(cd "$(dirname "$file")" && pwd)/$(basename "$file")"
+				abs_changed_files="${abs_changed_files}${abs_path},"
+			fi
+		fi
+	done <<<"$raw_files"
+
+	# Remove trailing comma
+	changed_files="${abs_changed_files%,}"
+
+	if [[ -n $changed_files ]]; then
+		file_count=$(echo "$changed_files" | tr ',' '\n' | wc -l)
+		echo "📝 Detected ${file_count} changed file(s)"
+	fi
+else
+	echo "⚠️  No changed files detected, will process all files in directory"
 fi
 
 default_fail_pipeline_on_first_exception="true"
@@ -125,7 +175,7 @@ args+=(
 	"--env" "gcp_project=$gcp_project"
 	"--env" "execute_only_changed_files=$execute_only_changed_files"
 	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
-	"--env" "credentials=$(</tmp/service_account.json)"
+	"--env" "credentials=$(<"$PIPELINE_FILE")"
 	"--volume" "$BUILDKITE_AGENT_BINARY_PATH:/usr/bin/buildkite-agent"
 )
 
@@ -139,7 +189,7 @@ display_command=()
 shell=("/bin/sh" "-e" "-c")
 args+=("${shell[@]}")
 display_command+=("${shell[@]}")
-command+=("export updated_files=${changed_files} && pip -q install -r plugin_scripts/requirements.lock && python -m plugin_scripts.__init__")
+command+=("pip install --quiet uv && export updated_files=${changed_files} && uv pip install --system -q -r plugin_scripts/requirements.lock && python -m plugin_scripts.__init__")
 
 # join command lines
 command_string="$(
