@@ -81,7 +81,7 @@ is_default_branch="false"
 if [[ ${prod_build_branch} == "${current_branch}" ]]; then
 	is_default_branch="true"
 	echo "--- :git: Detecting changed files on default branch (${current_branch})"
-	
+
 	# For default branch, compare with parent commit
 	if git rev-parse HEAD^ >/dev/null 2>&1; then
 		raw_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r HEAD^..HEAD 2>/dev/null || echo "")
@@ -92,7 +92,7 @@ if [[ ${prod_build_branch} == "${current_branch}" ]]; then
 	fi
 else
 	echo "--- :git: Detecting changed files on feature branch (${current_branch})"
-	
+
 	# For feature branches, compare with origin base branch
 	base_branch="origin/${prod_build_branch}"
 	if git rev-parse --verify "$base_branch" >/dev/null 2>&1; then
@@ -106,22 +106,22 @@ else
 fi
 
 # Convert relative paths to absolute paths and format as comma-separated list
-if [[ -n "$raw_files" ]]; then
+if [[ -n $raw_files ]]; then
 	abs_changed_files=""
 	while IFS= read -r file; do
-		if [[ -n "$file" ]]; then
+		if [[ -n $file ]]; then
 			# Convert to absolute path
-			if [[ -e "$file" ]]; then
+			if [[ -e $file ]]; then
 				abs_path="$(cd "$(dirname "$file")" && pwd)/$(basename "$file")"
 				abs_changed_files="${abs_changed_files}${abs_path},"
 			fi
 		fi
-	done <<< "$raw_files"
-	
+	done <<<"$raw_files"
+
 	# Remove trailing comma
 	changed_files="${abs_changed_files%,}"
-	
-	if [[ -n "$changed_files" ]]; then
+
+	if [[ -n $changed_files ]]; then
 		file_count=$(echo "$changed_files" | tr ',' '\n' | wc -l)
 		echo "📝 Detected ${file_count} changed file(s)"
 	fi
