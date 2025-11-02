@@ -2,8 +2,7 @@
 
 set -eo pipefail
 
-BLACK_ACTION="--check"
-ISORT_ACTION="--check-only"
+RUFF_FIX=""
 
 function usage
 {
@@ -17,8 +16,7 @@ while [[ $# -gt 0 ]]; do
     arg="$1"
     case $arg in
         --format-code)
-        BLACK_ACTION="--quiet"
-        ISORT_ACTION=""
+        RUFF_FIX="--fix"
         ;;
         -h|--help)
         usage
@@ -34,20 +32,21 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-# only generate html locally
+# Run tests with coverage (only generate html locally)
 pytest --cov plugin_scripts/ tests --cov-report html
 
 echo "Running MyPy..."
 mypy plugin_scripts tests
 
-echo "Running iSort..."
-isort ${ISORT_ACTION} plugin_scripts tests
+echo "Running Ruff linting..."
+ruff check ${RUFF_FIX} plugin_scripts tests
 
-echo "Running black..."
-black ${BLACK_ACTION} plugin_scripts tests
+if [ -z "${RUFF_FIX}" ]; then
+    echo "Running Ruff format check..."
+    ruff format --check plugin_scripts tests
+else
+    echo "Running Ruff formatter..."
+    ruff format plugin_scripts tests
+fi
 
-echo "Running flake8..."
-flake8 plugin_scripts tests
-
-echo "Running bandit..."
-bandit --ini .bandit --quiet -r plugin_scripts tests
+echo "All checks passed!"

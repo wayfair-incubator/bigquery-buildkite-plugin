@@ -1,4 +1,4 @@
-FROM python:3.10.4-buster
+FROM python:3.14-slim
 
 ARG _USER="lilchz"
 ARG _UID="1001"
@@ -16,15 +16,19 @@ ENV UID ${_UID}
 ENV GID ${_GID}
 ENV HOME /home/${_USER}
 ENV PATH "${HOME}/.local/bin/:${PATH}"
-ENV PIP_NO_CACHE_DIR "true"
+ENV UV_NO_CACHE "true"
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 RUN mkdir /app && chown ${UID}:${GID} /app
-
-USER ${_USER}
 
 COPY --chown=${UID}:${GID} ./requirements* /app/
 WORKDIR /app
 
-RUN pip install -r requirements.txt -r requirements-test.txt
+# Install dependencies as root first, then switch to user
+RUN uv pip install --system -r requirements.txt -r requirements-test.txt
+
+USER ${_USER}
 
 CMD bash
