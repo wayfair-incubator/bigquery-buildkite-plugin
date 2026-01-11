@@ -30,7 +30,7 @@ jobs:
         run: pytest --cov plugin_scripts/ tests/test_deploy.py --cov-report xml:coverage-${{ matrix.python-version }}.xml --junitxml=test-results-${{ matrix.python-version }}.xml
 
       - name: Upload pytest test results artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: pytest-results-${{ matrix.python-version }}
           path: test-results-${{ matrix.python-version }}.xml
@@ -38,7 +38,7 @@ jobs:
         if: ${{ always() }}
 
       - name: Upload coverage results artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: pytest-coverage-${{ matrix.python-version }}
           path: coverage-${{ matrix.python-version }}.xml
