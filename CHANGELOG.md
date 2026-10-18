@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- **Fixed command injection through changed file names.** The list of changed files was
+  interpolated into the shell command run inside the container, so a pull request adding a
+  file such as `schemas/ds/x$(cmd).json` would run `cmd` in a container that holds the
+  service account key. The list is now passed as an environment variable, newline-separated
+  (it was comma-separated, so names containing a comma were also split).
+- The service account key is no longer written to a temporary file or put on the
+  `docker create` command line, where it was visible in `docker inspect`; it is passed to
+  Docker by variable name only.
+- **BREAKING (behaviour):** The container no longer receives the whole job environment
+  (`BUILDKITE_ENV_FILE`), `BUILDKITE_AGENT_ACCESS_TOKEN`, `BUILDKITE_JOB_ID`,
+  `BUILDKITE_BUILD_ID`, or the mounted `buildkite-agent` binary. It gets the plugin
+  settings, the service account, and `HTTP(S)_PROXY`/`NO_PROXY` when set. Pipelines that
+  relied on other variables inside a `custom_image` run need them added explicitly.
+- `plugin_scripts/requirements.lock` now contains only runtime dependencies, with hashes,
+  and is installed with `--require-hashes`. This clears all known advisories (urllib3,
+  pyasn1, requests, protobuf, idna and others) and removes pytest, mypy, ruff and pip from
+  the deploy container. `uv` is pinned to 0.13.1 instead of installing the latest.
+
+### Fixed
+
+- The `shfmt` lint job failed because the Dockerfile installed `shfmt@latest`, which now
+  needs a newer Go than the image provides. shfmt is pinned to v3.12.0.
+
+### Added
+
+- Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
+
 ## [2.0.0] - 2025-11-02
 
 ### Changed - BREAKING
