@@ -58,6 +58,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `buildkite/plugin-tester` and `buildkite/plugin-linter` images are pinned to release tags.
 - The container no longer allocates a TTY (`-it`), so build logs no longer contain `\r\n` line endings.
 
+### Changed - BREAKING (gbq 2.0)
+
+- Upgraded [gbq](https://github.com/wayfair-incubator/gbq) from 1.1.0 to 2.0.0. What it means
+  for your schema files and pipelines (see the README's "Upgrading to 3.0.0"):
+  - Updating an existing table or view treats the JSON file as the source of truth: labels,
+    description and clustering omitted from the file are **removed**.
+  - An existing table whose partitioning differs from the file now fails the deployment with
+    `InvalidDefinitionException` (a changed time-partition expiration is applied).
+  - Invalid definitions raise `InvalidDefinitionException` instead of `KeyError`.
+  - An unchanged table or view no longer triggers an update call, and updates send only the
+    changed fields.
+  - Stored procedure arguments can be `ARRAY<...>`/`STRUCT<...>` (full types), and column
+    attributes such as policy tags, precision and default values are preserved on update.
+  - SQL files still run in `gcp_project`.
+- This release is intended to be published as **3.0.0**.
+
+### Added
+
+- **Application Default Credentials:** `gcp_service_account` is now optional. Without it the
+  plugin uses ADC: the agent's cloud identity (metadata server / Workload Identity) or the
+  file in `GOOGLE_APPLICATION_CREDENTIALS`, mounted read-only into the container. A key in
+  `gcp_service_account` still takes precedence.
+- An invalid service account key now fails with a clear message that does not include the key.
+- Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
+
 ### Changed - release process
 
 - Releases are created by a workflow. Merging a pull request that turns `## [Unreleased]` in
@@ -85,10 +110,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   managers, plus regex managers for the uv, default image and shfmt versions in `hooks/command`
   and `docker/shfmt.dockerfile`. uv updates (docker image, `setup-uv` `version:`, hook) and
   Go/shfmt updates are grouped, and `uv.lock` is refreshed weekly (lock file maintenance).
-
-### Added
-
-- Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
 
 ## [2.0.0] - 2025-11-02
 
