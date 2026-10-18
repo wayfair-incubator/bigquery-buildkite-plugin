@@ -70,7 +70,7 @@ The Docker image the deployment runs in. It must provide Python 3.11 or newer an
 
 Example: `python:3.13-slim`
 
-Default: `python:3.14-slim`
+Default: `python:3.15-slim`
 
 ### `debug_mode` (optional, boolean)
 
@@ -207,7 +207,7 @@ docker-compose run test
 
 ### Development Commands
 
-The project uses [uv](https://docs.astral.sh/uv/) for dependency management and `ruff` for linting/formatting. Dependencies are declared in `pyproject.toml` (runtime in `dependencies`, tools in the `dev` group) and locked in `uv.lock`; `plugin_scripts/requirements.lock` is the hash-pinned runtime subset that the plugin installs inside the deploy container. CI checks that both are up to date. The code supports Python 3.11 to 3.15; the plugin itself runs in `python:3.14-slim` unless you set `custom_image` (it needs Python 3.11 or newer with `pip`).
+The project uses [uv](https://docs.astral.sh/uv/) for dependency management and `ruff` for linting/formatting. Dependencies are declared in `pyproject.toml` (runtime in `dependencies`, tools in the `dev` group) and locked in `uv.lock`; `plugin_scripts/requirements.lock` is the hash-pinned runtime subset that the plugin installs inside the deploy container. CI checks that both are up to date. The code supports Python 3.11 to 3.15; the plugin itself runs in `python:3.15-slim` unless you set `custom_image` (it needs Python 3.11 or newer with `pip`).
 
 To work without Docker:
 
