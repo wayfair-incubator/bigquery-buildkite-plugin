@@ -51,6 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CI: workflows run with read-only `contents` permission (the repository default token was
+  write), checkouts no longer persist credentials, and the action version comments now match
+  the pinned SHAs (Dependabot had bumped SHAs and left stale `# v4`/`# v5` comments).
+- CI: the `Unit Tests` workflow runs the whole `tests/` directory, not only `test_deploy.py`.
+- `buildkite/plugin-tester` and `buildkite/plugin-linter` images are pinned to release tags.
 - The container no longer allocates a TTY (`-it`), so build logs no longer contain `\r\n` line endings.
 
 ### Added

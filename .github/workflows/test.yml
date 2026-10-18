@@ -7,13 +7,18 @@ on:
 env:
   PYTHON_VERSION: "3.14"
 
+permissions:
+  contents: read
+
 jobs:
   hook:
     name: Bats (hooks/command)
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
       - run: docker compose run --rm test
 
   test:
@@ -24,8 +29,10 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
     steps:
       - name: Check out code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -35,10 +42,10 @@ jobs:
           test-requirements: "true"
 
       - name: Run pytest
-        run: pytest --cov plugin_scripts/ tests/test_deploy.py --cov-report xml:coverage-${{ matrix.python-version }}.xml --junitxml=test-results-${{ matrix.python-version }}.xml
+        run: pytest --cov plugin_scripts/ tests/ --cov-report xml:coverage-${{ matrix.python-version }}.xml --junitxml=test-results-${{ matrix.python-version }}.xml
 
       - name: Upload pytest test results artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: pytest-results-${{ matrix.python-version }}
           path: test-results-${{ matrix.python-version }}.xml
@@ -46,7 +53,7 @@ jobs:
         if: ${{ always() }}
 
       - name: Upload coverage results artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: pytest-coverage-${{ matrix.python-version }}
           path: coverage-${{ matrix.python-version }}.xml
