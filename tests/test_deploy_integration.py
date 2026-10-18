@@ -339,3 +339,90 @@ def test_deploy_writes_the_annotation_file_even_when_a_file_fails(
     text = annotation.read_text()
     assert "failed to deploy" in text
     assert "ValueError: boom" in text
+
+
+@pytest.fixture
+def two_dataset_dir(tmp_path, monkeypatch):
+    for dataset, names in {
+        "sales": ("orders.json", "refund.json", "backfill.sql"),
+        "ops": ("jobs.json",),
+        "ops/drafts": ("wip.json",),
+    }.items():
+        directory = tmp_path / "schemas" / dataset
+        directory.mkdir(parents=True)
+        for name in names:
+            (directory / name).write_text(json.dumps({"schema": []}))
+    monkeypatch.chdir(tmp_path)
+    return "schemas"
+
+
+def _deployed(mock_bq):
+    structures = [
+        c.kwargs["structure_id"]
+        for c in mock_bq.create_or_update_structure.call_args_list
+    ]
+    return structures, mock_bq.execute.call_count
+
+
+def _run(mock_bq, directory, include=None, exclude=None):
+    from plugin_scripts.deploy import _parse_patterns
+
+    _deploy_from_directory(
+        bq=mock_bq,
+        gcp_project="p",
+        dataset_schema_directory=directory,
+        updated_files=[],
+        execute_only_changed_files=False,
+        fail_pipeline_on_first_exception=True,
+        include=_parse_patterns(include),
+        exclude=_parse_patterns(exclude),
+    )
+
+
+def test_no_patterns_deploys_everything(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir)
+    assert _deployed(mock_bq) == (["jobs", "wip", "orders", "refund"], 1)
+
+
+def test_include_limits_to_matching_files(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, include="sales/**")
+    assert _deployed(mock_bq) == (["orders", "refund"], 1)
+
+
+def test_exclude_removes_matching_files(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, exclude="**/*.sql\nops/drafts/**")
+    assert _deployed(mock_bq) == (["jobs", "orders", "refund"], 0)
+
+
+def test_exclude_wins_over_include(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, include="sales/*.json", exclude="sales/refund.json")
+    assert _deployed(mock_bq) == (["orders"], 0)
+
+
+def test_single_star_does_not_cross_directories(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, include="ops/*.json")
+    assert _deployed(mock_bq) == (["jobs"], 0)
+
+
+def test_double_star_prefix_matches_any_depth_including_none(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, include="**/wip.json\n**/jobs.json")
+    assert _deployed(mock_bq) == (["jobs", "wip"], 0)
+
+
+def test_include_matching_nothing_warns(two_dataset_dir, mocker, caplog):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, include="nothing/**")
+    assert _deployed(mock_bq) == ([], 0)
+    assert "No schema file matches the include patterns" in caplog.text
+
+
+def test_regex_metacharacters_in_patterns_are_literal(two_dataset_dir, mocker):
+    mock_bq = mocker.Mock()
+    _run(mock_bq, two_dataset_dir, include="sales/orders.json\nsales/(a|b).json")
+    assert _deployed(mock_bq) == (["orders"], 0)

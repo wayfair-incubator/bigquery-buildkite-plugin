@@ -72,6 +72,26 @@ Example: `python:3.13-slim`
 
 Default: `python:3.15-slim`
 
+### `include` (optional, array of strings)
+
+Only deploy files whose path matches one of these globs. Paths are relative to `dataset_schema_directory` and use `/`. `*` and `?` match within one directory, `**` matches across directories (`**/a.json` also matches `a.json` at the top). Without `include`, all `*.json` and `*.sql` files are considered.
+
+Example:
+
+```yaml
+include:
+  - "sales/**"
+  - "ops/*.json"
+```
+
+### `exclude` (optional, array of strings)
+
+Skip files that match any of these globs (same syntax). `exclude` wins over `include`.
+
+Example: `["**/*.sql", "**/drafts/**"]`
+
+Both options apply before `execute_only_changed_files`: a file is deployed only if it is selected here and, when that option is on, changed. If `include` matches no file, the log says so.
+
 ### `annotate` (optional, boolean)
 
 Add a [Buildkite annotation](https://buildkite.com/docs/agent/v3/cli-annotate) with a table of every file that was processed: its target (`project.dataset.structure`, or SQL), whether it deployed or failed, how long it took and the error. The annotation is created by the agent after the deployment, also when it fails (as an error annotation), and the container never receives the agent or its token. A problem creating the annotation never changes the result of the step. The same per-file summary (counts and failures) is always printed at the end of the build log, with or without this option.
