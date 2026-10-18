@@ -83,6 +83,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An invalid service account key now fails with a clear message that does not include the key.
 - Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
 
+### Changed - documentation
+
+- README: documents `custom_image` and `debug_mode`, the directory layout (dataset from the
+  directory name, JSON vs SQL files, deployment order, the dataset must already exist), a
+  fuller pipeline example and troubleshooting; the intro is de-duplicated and recommends pinning
+  a release tag.
+
 ### Changed - release process
 
 - Releases are created by a workflow. Merging a pull request that turns `## [Unreleased]` in
