@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pyasn1, requests, protobuf, idna and others) and removes pytest, mypy, ruff and pip from
   the deploy container. `uv` is pinned to 0.13.1 instead of installing the latest.
 
+### Fixed
+
+- The `shfmt` lint job failed because the Dockerfile installed `shfmt@latest`, which now
+  needs a newer Go than the image provides. shfmt is pinned to v3.12.0.
+
 ### Added
 
 - Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
