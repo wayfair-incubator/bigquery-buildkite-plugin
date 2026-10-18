@@ -1,19 +1,86 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  
   "extends": [
-    "config:base",
+    "config:recommended",
     "helpers:pinGitHubActionDigests"
   ],
-   
-   "enabledManagers": [
+  "enabledManagers": [
+    "custom.regex",
     "docker-compose",
+    "dockerfile",
     "github-actions",
-    "pip_requirements",
-    "setup-cfg"
+    "pep621"
   ],
-
-  "pip_requirements": {
-    "fileMatch": ["(^|/)([\\w-]*)requirements[-\\w]*\\.(txt|pip)$"]
-  }
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 5am on monday"
+    ]
+  },
+  "customManagers": [
+    {
+      "description": "uv version installed inside the deploy container by the hook",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^hooks/command$/"
+      ],
+      "matchStrings": [
+        "uv_version=\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "pypi",
+      "depNameTemplate": "uv"
+    },
+    {
+      "description": "default deploy container image in the hook",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^hooks/command$/"
+      ],
+      "matchStrings": [
+        "default_image=\"(?<depName>[^:\"]+):(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "shfmt installed by the shfmt Dockerfile",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^docker/shfmt\\.dockerfile$/"
+      ],
+      "matchStrings": [
+        "shfmt@(?<currentValue>v[0-9][^\\s]*)"
+      ],
+      "datasourceTemplate": "go",
+      "depNameTemplate": "mvdan.cc/sh/v3"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "requires-python is a support policy, not a dependency to bump",
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Keep every place that pins uv on the same version",
+      "matchPackageNames": [
+        "ghcr.io/astral-sh/uv",
+        "astral-sh/uv",
+        "uv"
+      ],
+      "groupName": "uv"
+    },
+    {
+      "description": "A new shfmt can require a newer Go than the builder image provides",
+      "matchPackageNames": [
+        "golang",
+        "mvdan.cc/sh/v3"
+      ],
+      "groupName": "shfmt toolchain"
+    }
+  ]
 }

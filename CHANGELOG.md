@@ -70,8 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI installs a pinned uv through `astral-sh/setup-uv` instead of `curl | sh`; the devbox image
   copies uv from a digest-pinned `ghcr.io/astral-sh/uv:0.13.1` instead of `:latest`. A new
   CI job fails if `uv.lock` or `requirements.lock` is stale.
-- Renovate no longer sees the removed `requirements*.txt`; it is reconfigured for
-  `pyproject.toml`/`uv.lock` in a follow-up change.
+- Dependency updates: Dependabot is removed (it duplicated Renovate's pull requests). Renovate now
+  uses `config:recommended` and the `pep621`, `dockerfile`, `docker-compose` and `github-actions`
+  managers, plus regex managers for the uv, default image and shfmt versions in `hooks/command`
+  and `docker/shfmt.dockerfile`. uv updates (docker image, `setup-uv` `version:`, hook) and
+  Go/shfmt updates are grouped, and `uv.lock` is refreshed weekly (lock file maintenance).
 
 ### Added
 
