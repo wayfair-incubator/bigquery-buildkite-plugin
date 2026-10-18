@@ -1,25 +1,25 @@
 [![Actions Status](https://github.com/wayfair-incubator/bigquery-buildkite-plugin/workflows/Lint/badge.svg?branch=main)](https://github.com/wayfair-incubator/bigquery-buildkite-plugin/actions)
 [![Actions Status](https://github.com/wayfair-incubator/bigquery-buildkite-plugin/workflows/Unit%20Tests/badge.svg?branch=main)](https://github.com/wayfair-incubator/bigquery-buildkite-plugin/actions)
-![Version](https://img.shields.io/static/v1.svg?label=Version&message=1.2.2&color=lightgrey&?link=http://left&link=https://github.com/wayfair-incubator/bigquery-buildkite-plugin/tree/v1.2.2)
+![Version](https://img.shields.io/static/v1.svg?label=Version&message=2.0.0&color=lightgrey&?link=http://left&link=https://github.com/wayfair-incubator/bigquery-buildkite-plugin/tree/v2.0.0)
 ![Plugin Status](https://img.shields.io/static/v1.svg?label=&message=Buildkite%20Plugin&color=blue&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAk1BMVEX///+DrRik1Cb+/vyErhin1yeAqhfJ5n+dzCO50X2VwiC2zna020vg8LSo1i+q1zTN3qL7/fav2UDT4q33++yXuj3z+eLO6IqMuByJsSPM54XX5bWcvUbH5Xrg6sWiwVHB1ovk7cymxFnq8deOtC2xzG7c6L6/1YfU7JbI2pj2+e+jzzPd763K3J3j8ryRtDbY7aOqCe3pAAACTElEQVRoge3Z11KDQBSAYUpItSRqVGwxEVOwxPd/OndhCbA5BTaLM87sueb83+yMStHz3Lhx48bN/5iw+2VjImy0fDvzQiNCLKVrdjn0nq++QwNCLMy+9uOzc2Y59AZBwF4F55NefxxxyxK4aEvI/C7x/QxglrMTBNxVej6V+QNALh+AhkRY5isAsVwBxFWfM/rnLsu/qnwNQIkawBBy/abMawBCaEAQXGFElt/Evo8CIHEEIESWH9XyAAAQACCIH40A8yBwRICARiB5BNAIBKgQ8tLbCZBHgRqBAgWB5wmgQhCAIt7ekTwJ5AQHSGKC1TkgiM7WIs8A0bBvCETR8H7CA4EhIPP9fgPA7AR53u91BBR53+8EKPPdACLvq3wXQC1vH9DytoGjvF0gGo71vE0gCoC8PQDJ2wJEvgfmbQFo3g5A5HNA3K+eL0yBePdO5AtAEAOUoIB4c+ONiHwBZHddjMCB5DUV6yOqfzgBQWCAzMu9ZoAiHgACBpJdmj3SNAdQAgKSXfFQ1gZQz28PlxxQ5tsCIKED+6/qU2tbQBF3lxgwn9YfitsDR0QVmE9D7bHeBNCIEphf63lToEYUAJQ3BxSxlUQGPD3Cr5DmwIGQJ8DypwHqlXX7gec5oMcAXv5OT31OYU6weuM/9tDv/iSwWnJxfghA5s0+QzUCFi828iiwWNvJI4C9PAg8WcwDAPVLYwGwndeAufV8DZB/bm3nK0A3+RyI81tdF3l1gn1neQlM4qnpp+9ms0xP/P8AP/8778aNGzdu/mh+AQp1NCB/JInXAAAAAElFTkSuQmCC)
 
 
 # BigQuery Buildkite Plugin
 
-This Buildkite plugin can be used to deploy tables/views schemas to BigQuery
-
-A [Buildkite plugin](https://buildkite.com/docs/agent/v3/plugins) for deploying tables/views schemas to BigQuery.
+A [Buildkite plugin](https://buildkite.com/docs/agent/v3/plugins) that deploys BigQuery tables, views and stored procedures from JSON definition files, and runs SQL files, using [gbq](https://github.com/wayfair-incubator/gbq).
 
 ## Using the plugin
 
-If the version number is not provided then the most recent version of the plugin will be used. Do not use version number as `master` or any branch names.
+Pin a released version tag (`#vX.Y.Z`, see the [releases](https://github.com/wayfair-incubator/bigquery-buildkite-plugin/releases) and the [changelog](CHANGELOG.md)). Do not use a branch name such as `master` or `main`, so that a new release cannot change your pipeline unexpectedly.
+
+The agent needs `bash`, `docker` and `git`. The deployment runs in a Docker container, with your checkout copied in.
 
 ### Simple
 
 ```yaml
 steps:
   - plugins:
-      - wayfair-incubator/bigquery#v1.2.2:
+      - wayfair-incubator/bigquery#v2.0.0:
           gcp_project: gcp-us-project
           dataset_schema_directory: schemas/gcp-us-project/dataset
 ```
@@ -36,9 +36,9 @@ Example: `gcp-us-project`
 
 ### `dataset_schema_directory` (required, string)
 
-The directory in your repository where are you storing the schemas for your tables and views.
+The directory in your repository that holds your definition files, relative to the checkout. See [Directory layout](#directory-layout).
 
-Example: `gcp-us-project/dataset_name`
+Example: `schemas/gcp-us-project`
 
 ### `prod_build_branch` (optional, string)
 
@@ -58,11 +58,43 @@ Default: `false`
 
 ### `fail_pipeline_on_first_exception` (optional, boolean)
 
-Whether to fail pipeline as soon as there is one failure.
+Whether to stop at the first file that fails to deploy. If `false`, the remaining files are still deployed and the step fails at the end.
+
+Example: `false`
+
+Default: `true`
+
+### `custom_image` (optional, string)
+
+The Docker image the deployment runs in. It must provide Python 3.11 or newer and `pip`; the plugin installs its locked dependencies into it on every run.
+
+Example: `python:3.13-slim`
+
+Default: `python:3.14-slim`
+
+### `debug_mode` (optional, boolean)
+
+Print the resolved configuration, the changed files and the Docker command (never the credentials).
 
 Example: `true`
 
-Default: `true`
+Default: `false`
+
+## Directory layout
+
+Every `*.json` and `*.sql` file under `dataset_schema_directory` is deployed, in sorted path order. Other files are ignored.
+
+```text
+schemas/gcp-us-project/
+  sales/                 <- directory name = BigQuery dataset
+    orders.json          <- table, view or routine definition: sales.orders
+    orders_by_day.json
+    backfill.sql         <- SQL statement or script, run in gcp_project
+```
+
+- **JSON files** define a table, view or stored procedure ([format](https://github.com/wayfair-incubator/gbq)). The dataset is the name of the directory the file is in and the structure id is the file name without `.json`, so `sales/orders.json` deploys `<gcp_project>.sales.orders`. The dataset must already exist. A file in a nested directory deploys into the dataset named after that nested directory.
+- **SQL files** are executed as written (DDL, DML or a script) in `gcp_project`. The file name is only used in logs. They are not parameterised, so use them for statements that are safe to run on every deploy, or combine them with `execute_only_changed_files`.
+- Because files run in path order and one at a time, put definitions that depend on each other in names that sort correctly, or deploy them in separate steps.
 
 ## Secret
 
@@ -75,9 +107,26 @@ env:
 
 ## Example
 
-### Basic
+### Deploy on the default branch, preview changes on pull requests
 
-The following pipeline will deploy all the schemas to the `gcp-us-project` living under `directory/project/`
+```yaml
+steps:
+  - label: ":bigquery: Deploy BigQuery"
+    plugins:
+      - wayfair-incubator/bigquery#v2.0.0:
+          gcp_project: gcp-us-project
+          dataset_schema_directory: schemas/gcp-us-project
+          prod_build_branch: main
+          execute_only_changed_files: true
+```
+
+On `main` this deploys the files changed by the last commit; on other branches it deploys the files changed compared with `origin/main`. Keep `fail_pipeline_on_first_exception` at its default so a broken definition stops the build.
+
+### Troubleshooting
+
+- **Nothing was deployed:** with `execute_only_changed_files: true` the log says `No changed files detected`. Check that your files are under `dataset_schema_directory` and that the build checked out enough history (the plugin fetches `origin/<prod_build_branch>` when it is missing).
+- **`InvalidDefinitionException`:** the JSON file is not a valid definition, or a table's partitioning differs from the deployed one (partitioning cannot be changed in place).
+- **Authentication errors:** see [Credentials](#credentials).
 
 ## Schemas
 

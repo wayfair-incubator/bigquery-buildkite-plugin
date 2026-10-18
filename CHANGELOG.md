@@ -58,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `buildkite/plugin-tester` and `buildkite/plugin-linter` images are pinned to release tags.
 - The container no longer allocates a TTY (`-it`), so build logs no longer contain `\r\n` line endings.
 
+### Changed - documentation
+
+- README: documents `custom_image` and `debug_mode`, the directory layout (dataset from the
+  directory name, JSON vs SQL files, deployment order, the dataset must already exist), a
+  fuller pipeline example and troubleshooting; the intro is de-duplicated and recommends pinning
+  a release tag.
+
 ### Changed - release process
 
 - Releases are created by a workflow. Merging a pull request that turns `## [Unreleased]` in
