@@ -44,7 +44,8 @@ def _deploy():
     credentials = os.environ.get("credentials")
     gcp_project = os.environ.get("gcp_project")
 
-    updated_files = os.environ.get("updated_files", "").split(",")
+    # Newline-separated, so file names containing commas survive
+    updated_files = os.environ.get("updated_files", "").splitlines()
     execute_only_changed_files = _str_to_bool(
         os.environ.get("execute_only_changed_files", "true")
     )

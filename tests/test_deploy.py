@@ -93,3 +93,21 @@ def test_main_true(mocker, gcp_project, dataset_schema_directory, credentials):
 
     deploy.main()
     assert True
+
+
+def test_deploy_reads_updated_files_as_newline_separated_list(
+    mocker, monkeypatch, gcp_project, dataset_schema_directory, credentials
+):
+    """File names may contain commas or shell metacharacters; only newlines split."""
+    monkeypatch.setenv("updated_files", "schemas/a,b.json\nschemas/$(x);y.json\n")
+    mocker.patch("plugin_scripts.deploy.BigQuery")
+    from_directory = mocker.patch(
+        "plugin_scripts.deploy._deploy_from_directory", return_value=False
+    )
+
+    deploy._deploy()
+
+    assert from_directory.call_args.args[3] == [
+        "schemas/a,b.json",
+        "schemas/$(x);y.json",
+    ]
