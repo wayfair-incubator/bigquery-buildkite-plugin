@@ -37,20 +37,18 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
+          version: "0.13.1"
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install dependencies
-        uses: ./.github/actions/install-dependencies
-        with:
-          requirements: "true"
-          test-requirements: "true"
+        run: uv sync --locked
 
       - name: Run ruff check
-        run: ruff check plugin_scripts tests
+        run: uv run ruff check plugin_scripts tests
 
       - name: Run ruff format check
-        run: ruff format --check plugin_scripts tests
+        run: uv run ruff format --check plugin_scripts tests
 
   mypy:
     name: Type checking with mypy
@@ -60,14 +58,31 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
+          version: "0.13.1"
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install dependencies
-        uses: ./.github/actions/install-dependencies
-        with:
-          requirements: "true"
-          test-requirements: "true"
+        run: uv sync --locked
 
       - name: Run mypy
-        run: mypy plugin_scripts tests
+        run: uv run mypy plugin_scripts tests
+
+  lock:
+    name: Lockfiles are up to date
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.13.1"
+      - name: Check uv.lock
+        run: uv lock --check
+      - name: Check the exported container requirements
+        run: |
+          uv export --locked --no-dev --no-emit-project --format requirements-txt --no-header \
+            --output-file "${RUNNER_TEMP}/requirements.lock"
+          diff plugin_scripts/requirements.lock "${RUNNER_TEMP}/requirements.lock"
