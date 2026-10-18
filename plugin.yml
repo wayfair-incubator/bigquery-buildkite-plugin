@@ -25,6 +25,10 @@ configuration:
     custom_image:
       type: string
       description: "Custom Docker image to use for deployment (default: python:3.15-slim)"
+    mode:
+      type: string
+      enum: ["apply", "plan", "validate"]
+      description: "apply deploys (default); plan shows what would change without changing anything; validate checks the definition files offline, without credentials"
     include:
       type: array
       items:

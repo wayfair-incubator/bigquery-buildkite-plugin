@@ -304,3 +304,44 @@ STUB
   grep -qx "include_patterns=" "${DOCKER_LOG}.create"
   grep -qx "exclude_patterns=" "${DOCKER_LOG}.create"
 }
+
+@test "mode defaults to apply and is passed to the container" {
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "mode=apply" "${DOCKER_LOG}.create"
+}
+
+@test "plan mode keeps the credentials" {
+  export BUILDKITE_PLUGIN_BIGQUERY_MODE=plan
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "mode=plan" "${DOCKER_LOG}.create"
+  grep -qx -- "credentials" "${DOCKER_LOG}.create"
+}
+
+@test "validate mode passes no credentials even if one is set" {
+  export BUILDKITE_PLUGIN_BIGQUERY_MODE=validate
+  echo '{}' >"${TEST_DIR}/adc.json"
+  export GOOGLE_APPLICATION_CREDENTIALS="${TEST_DIR}/adc.json"
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "mode=validate" "${DOCKER_LOG}.create"
+  ! grep -qx -- "credentials" "${DOCKER_LOG}.create"
+  ! grep -q "google-adc.json" "${DOCKER_LOG}.create"
+  ! grep -q "TOP-SECRET-KEY" "${DOCKER_LOG}.create" "${DOCKER_LOG}.env"
+}
+
+@test "validate mode works with no credentials configured at all" {
+  export BUILDKITE_PLUGIN_BIGQUERY_MODE=validate
+  unset gcp_service_account
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+}
+
+@test "an unknown mode is rejected before anything runs" {
+  export BUILDKITE_PLUGIN_BIGQUERY_MODE=destroy
+  run "${HOOK}"
+  [ "$status" -eq 1 ]
+  [[ $output == *"mode must be one of apply, plan or validate"* ]]
+  [ ! -e "${DOCKER_LOG}.create" ]
+}

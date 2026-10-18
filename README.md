@@ -72,6 +72,38 @@ Example: `python:3.13-slim`
 
 Default: `python:3.15-slim`
 
+### `mode` (optional, string)
+
+- `apply` (default): deploy.
+- `plan`: show what `apply` would do and **change nothing**. Every JSON definition is run through the same gbq code that `apply` uses, against your real BigQuery state, but its writes are recorded instead of sent, and any other request that could change something is refused. Each file is reported as *would create*, *would update* (with the changed fields, for example `removes label team; adds column name`), *unchanged*, or *failed* when `apply` would fail (for example a partitioning change, or an invalid definition). SQL files are checked with a BigQuery [dry run](https://cloud.google.com/bigquery/docs/dry-run-queries) (syntax, referenced tables and bytes it would scan) and are never executed. Any failed file fails the step. `plan` needs credentials with read access only: `bigquery.tables.get`, `bigquery.routines.get` and `bigquery.jobs.create` (for the dry run).
+- `validate`: check that every definition parses, with gbq's own parser, and that SQL files are not empty. It works offline and uses **no credentials**, so it can run in steps that have none.
+
+A plan shows what the deployment would write; BigQuery can still reject a write when applying (permissions, quotas), and a dry run does not prove that DML would succeed against the data. Use `annotate: true` to get the plan as a table on the build.
+
+Example, a plan on pull requests and a real deployment on `main`:
+
+```yaml
+steps:
+  - label: ":bigquery: Plan"
+    if: build.branch != "main"
+    plugins:
+      - wayfair-incubator/bigquery#v3.0.0:
+          gcp_project: gcp-us-project
+          dataset_schema_directory: schemas/gcp-us-project
+          mode: plan
+          annotate: true
+  - label: ":bigquery: Deploy"
+    if: build.branch == "main"
+    plugins:
+      - wayfair-incubator/bigquery#v3.0.0:
+          gcp_project: gcp-us-project
+          dataset_schema_directory: schemas/gcp-us-project
+          prod_build_branch: main
+          execute_only_changed_files: true
+```
+
+Default: `apply`
+
 ### `include` (optional, array of strings)
 
 Only deploy files whose path matches one of these globs. Paths are relative to `dataset_schema_directory` and use `/`. `*` and `?` match within one directory, `**` matches across directories (`**/a.json` also matches `a.json` at the top). Without `include`, all `*.json` and `*.sql` files are considered.
