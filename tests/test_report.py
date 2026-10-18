@@ -72,3 +72,48 @@ def test_long_errors_are_truncated():
 
     assert "x" * 600 not in markdown
     assert "..." in markdown
+
+
+def test_plan_annotation_shows_planned_changes():
+    results = [
+        _result(status="would-update", detail="removes label team; adds column x"),
+        _result(path="ds/new.json", target="proj.ds.new", status="would-create"),
+        _result(path="ds/same.json", target="proj.ds.same", status="unchanged"),
+    ]
+
+    markdown = annotation_markdown(results, "proj", mode="plan")
+
+    assert "BigQuery plan (nothing was changed)" in markdown
+    assert "2 change(s) planned, 3 file(s) checked" in markdown
+    assert "✏️ would update" in markdown
+    assert "➕ would create" in markdown
+    assert "removes label team; adds column x" in markdown
+
+
+def test_plan_annotation_with_a_blocked_file():
+    markdown = annotation_markdown(
+        [_result(status="failed", error="Cannot change the partitioning")],
+        "proj",
+        mode="plan",
+    )
+
+    assert "1 of 1 file(s) cannot be applied" in markdown
+
+
+def test_validate_annotation():
+    markdown = annotation_markdown([_result(status="valid")], "proj", mode="validate")
+
+    assert "BigQuery validation (nothing was changed)" in markdown
+    assert "1 file(s) valid" in markdown
+
+
+def test_plan_summary_counts_statuses_and_lists_details():
+    text = summary_text(
+        [
+            _result(status="would-update", detail="removes the description"),
+            _result(path="b.json", target="proj.ds.b", status="unchanged"),
+        ]
+    )
+
+    assert text.splitlines()[0] == "1 unchanged, 1 would-update"
+    assert "would-update proj.ds.orders: removes the description" in text

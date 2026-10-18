@@ -7,12 +7,17 @@ from pathlib import Path
 from typing import TextIO
 
 from gbq import BigQuery
+from gbq.dto import StructureType
+from gbq.exceptions import InvalidDefinitionException
+from gbq.helpers import get_bq_schema_from_json_schema
+from google.cloud.bigquery import QueryJobConfig
 
 from plugin_scripts.pipeline_exceptions import (
     DatasetSchemaDirectoryNonExistent,
     DeployFailed,
     MissingConfigError,
 )
+from plugin_scripts.plan import PlanRecorder
 from plugin_scripts.report import DeployResult, annotation_markdown, summary_text
 
 # Configure logging
@@ -23,6 +28,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+MODES = ("apply", "plan", "validate")
+
+
 def _validate_env_variables():
     """Validate that all required environment variables are set."""
     if not os.environ.get("gcp_project"):
@@ -30,6 +38,10 @@ def _validate_env_variables():
 
     if not os.environ.get("dataset_schema_directory"):
         raise MissingConfigError("Missing `dataset_schema_directory` config")
+
+    mode = os.environ.get("mode", "apply")
+    if mode not in MODES:
+        raise MissingConfigError(f"Invalid `mode` {mode!r}, use one of {MODES}")
 
 
 def _validate_if_path_exists():
@@ -57,10 +69,19 @@ def _deploy():
     logger.info(f"Starting deployment to project: {gcp_project}")
     logger.info(f"Schema directory: {dataset_schema_directory}")
     logger.info(f"Execute only changed files: {execute_only_changed_files}")
+    mode = os.environ.get("mode", "apply")
+    if mode != "apply":
+        logger.info(f"Mode: {mode} (nothing will be changed)")
 
     results: list[DeployResult] = []
     try:
-        bq = BigQuery(svc_account=service_account, project=gcp_project)
+        bq: BigQuery | None = None
+        recorder: PlanRecorder | None = None
+        if mode != "validate":  # validating needs no credentials
+            bq = BigQuery(svc_account=service_account, project=gcp_project)
+            if mode == "plan":
+                recorder = PlanRecorder(bq.bq_client)
+                bq.bq_client = recorder  # gbq now records writes instead of sending
         deploy_failed = _deploy_from_directory(
             bq,
             gcp_project,
@@ -71,18 +92,22 @@ def _deploy():
             results,
             _parse_patterns(os.environ.get("include_patterns")),
             _parse_patterns(os.environ.get("exclude_patterns")),
+            mode,
+            recorder,
         )
     except Exception as e:
         logger.error(f"Deployment failed with error: {e}", exc_info=True)
         raise DeployFailed(f"Deployment failed: {e}") from e
     finally:
-        _report(results, gcp_project)
+        _report(results, gcp_project, mode)
 
     if deploy_failed:
         raise DeployFailed("One or more files failed to deploy")
 
 
-def _report(results: list[DeployResult], gcp_project: str | None) -> None:
+def _report(
+    results: list[DeployResult], gcp_project: str | None, mode: str = "apply"
+) -> None:
     """Log a per-file summary and, if asked, write the Buildkite annotation file."""
     if results:
         logger.info(f"Summary: {summary_text(results)}")
@@ -91,7 +116,7 @@ def _report(results: list[DeployResult], gcp_project: str | None) -> None:
     if annotation_file:
         try:
             Path(annotation_file).write_text(
-                annotation_markdown(results, gcp_project or "")
+                annotation_markdown(results, gcp_project or "", mode)
             )
         except OSError as e:
             logger.warning(f"Could not write the annotation file: {e}")
@@ -141,6 +166,78 @@ def _is_selected(
     return not any(p.match(relative_path) for p in exclude)
 
 
+def _process_file(
+    mode: str,
+    bq: BigQuery | None,
+    recorder: PlanRecorder | None,
+    contents: TextIO,
+    is_sql: bool,
+    dataset: str,
+    file_name: str,
+    gcp_project: str,
+) -> tuple[str, str]:
+    """Handle one file for the mode; return its result status and detail."""
+    if mode == "validate":
+        if is_sql:
+            _validate_sql_script(contents, file_name)
+        else:
+            _validate_json_structure(contents, file_name)
+        return "valid", ""
+
+    assert bq is not None  # only validate runs without a client
+    if is_sql:
+        if mode == "plan":
+            return "valid", _dry_run_sql_script(bq, contents, file_name)
+        _deploy_sql_script(bq=bq, contents=contents, file_name=file_name)
+        return "deployed", ""
+
+    since = len(recorder.changes) if recorder else 0
+    _deploy_json_structure(
+        bq=bq,
+        contents=contents,
+        dataset=dataset,
+        file_name=file_name,
+        gcp_project=gcp_project,
+    )
+    if recorder is None:
+        return "deployed", ""
+    change = recorder.change_since(since)
+    status = {"create": "would-create", "update": "would-update"}.get(
+        change.action, "unchanged"
+    )
+    return status, "; ".join(change.details)
+
+
+def _validate_json_structure(contents: TextIO, file_name: str) -> None:
+    """Check a definition with gbq's own parser, without credentials or network."""
+    logger.info(f"Validating definition {file_name}.json")
+    structure = BigQuery._get_structure(json.loads(contents.read()))
+    if structure.type == StructureType.stored_procedure:
+        BigQuery._handle_routine_arguments(structure)
+    elif structure.type in (StructureType.table, StructureType.view):
+        if structure.table_schema:
+            get_bq_schema_from_json_schema(structure.table_schema)
+    else:
+        raise InvalidDefinitionException("Missing required structure definition")
+
+
+def _validate_sql_script(contents: TextIO, file_name: str) -> None:
+    logger.info(f"Validating SQL file {file_name}.sql")
+    if not contents.read().strip():
+        raise InvalidDefinitionException("The SQL file is empty")
+
+
+def _dry_run_sql_script(bq: BigQuery, contents: TextIO, file_name: str) -> str:
+    """Have BigQuery check the SQL without running it; return what it would scan."""
+    logger.info(f"Dry-running SQL file: {file_name}.sql")
+    job = bq.execute(
+        query=contents.read(),
+        job_config=QueryJobConfig(dry_run=True, use_query_cache=False),
+    )
+    scanned = job.total_bytes_processed
+    return "" if scanned is None else f"would process {scanned} bytes"
+
+
 def _record(
     results: list[DeployResult],
     file_path: Path,
@@ -148,6 +245,7 @@ def _record(
     started: float,
     status: str,
     error: str = "",
+    detail: str = "",
 ) -> None:
     results.append(
         DeployResult(
@@ -157,12 +255,13 @@ def _record(
             status=status,
             seconds=time.monotonic() - started,
             error=error,
+            detail=detail,
         )
     )
 
 
 def _deploy_from_directory(
-    bq: BigQuery,
+    bq: BigQuery | None,
     gcp_project: str,
     dataset_schema_directory: str,
     updated_files: list[str],
@@ -171,6 +270,8 @@ def _deploy_from_directory(
     results: list[DeployResult] | None = None,
     include: list[re.Pattern[str]] | None = None,
     exclude: list[re.Pattern[str]] | None = None,
+    mode: str = "apply",
+    recorder: PlanRecorder | None = None,
 ) -> bool:
     """
     Deploy all schema files from the specified directory.
@@ -185,6 +286,8 @@ def _deploy_from_directory(
         results: If given, a DeployResult is appended for every file processed
         include: Globs (relative to the directory); only matching files are deployed
         exclude: Globs (relative to the directory); matching files are skipped
+        mode: "apply", "plan" (read-only, shows what would change) or "validate"
+        recorder: In plan mode, the recorder wrapped around gbq's client
 
     Returns:
         bool: True if any deployment failed, False otherwise
@@ -244,22 +347,18 @@ def _deploy_from_directory(
 
             try:
                 with file_path.open() as contents:
-                    if file_extension == "sql":
-                        _deploy_sql_script(
-                            bq=bq,
-                            contents=contents,
-                            file_name=file_stem,
-                        )
-                    elif file_extension == "json":
-                        _deploy_json_structure(
-                            bq=bq,
-                            contents=contents,
-                            dataset=dataset,
-                            file_name=file_stem,
-                            gcp_project=gcp_project,
-                        )
+                    status, detail = _process_file(
+                        mode=mode,
+                        bq=bq,
+                        recorder=recorder,
+                        contents=contents,
+                        is_sql=file_extension == "sql",
+                        dataset=dataset,
+                        file_name=file_stem,
+                        gcp_project=gcp_project,
+                    )
                 deployed_count += 1
-                _record(results, file_path, target, started, "deployed")
+                _record(results, file_path, target, started, status, detail=detail)
             except json.JSONDecodeError as e:
                 logger.error(f"Invalid JSON in {file_path}: {e}")
                 _record(

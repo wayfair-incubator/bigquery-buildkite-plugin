@@ -54,11 +54,23 @@ fi
 
 dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
 
+mode="${BUILDKITE_PLUGIN_BIGQUERY_MODE:-apply}"
+case "$mode" in
+apply | plan | validate) ;;
+*)
+	echo "ERROR: mode must be one of apply, plan or validate, not '${mode}'"
+	exit 1
+	;;
+esac
+
 # Credentials: a service account key in `gcp_service_account`, or else Application
 # Default Credentials (the metadata server of the agent's cloud identity, or the
 # file named by GOOGLE_APPLICATION_CREDENTIALS, which is mounted read-only).
 adc_credentials_file=""
-if [ -n "${gcp_service_account:-}" ]; then
+if [[ ${mode} == "validate" ]]; then
+	echo "--- :mag: validate mode: definitions are checked locally, no credentials are used"
+	gcp_service_account=""
+elif [ -n "${gcp_service_account:-}" ]; then
 	echo "--- :key: Authenticating with the gcp_service_account key"
 else
 	echo "--- :key: gcp_service_account is not set, using Application Default Credentials"
@@ -197,6 +209,7 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "Dataset Schema Directory: ${dataset_schema_directory}"
 	echo "Execute Only Changed Files: ${execute_only_changed_files}"
 	echo "Fail Pipeline on First Exception: ${fail_pipeline_on_first_exception}"
+	echo "Mode: ${mode}"
 	echo "Include: ${include_patterns:-<all>}"
 	echo "Exclude: ${exclude_patterns:-<none>}"
 	echo "Changed Files: ${changed_files}"
@@ -224,6 +237,7 @@ args+=(
 	"--env" "execute_only_changed_files=$execute_only_changed_files"
 	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
 	"--env" "updated_files=$changed_files"
+	"--env" "mode=$mode"
 	"--env" "include_patterns=$include_patterns"
 	"--env" "exclude_patterns=$exclude_patterns"
 )
