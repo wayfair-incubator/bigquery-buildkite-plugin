@@ -6,22 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [3.1.0] - 2026-10-18
 
-- `mode` option. `plan` shows what a deployment would create or update (with the changed
-  fields, including labels, description and clustering that would be removed) and which files
-  `apply` would reject, without changing anything: gbq's own code runs against a wrapper around
-  its BigQuery client that records writes and refuses everything else, and SQL files are
-  checked with a dry run instead of being executed. `validate` checks definitions offline with
-  no credentials. `apply` (the default) is unchanged. Results also appear in the annotation
-  and the log summary.
-
-### Added
-
-- `include` and `exclude` options (arrays of globs, relative to `dataset_schema_directory`) to
-  choose which files are deployed, for example one dataset or everything except SQL scripts.
-  `exclude` wins; both apply before `execute_only_changed_files`. Without them every file is
-  considered, as before.
+New opt-in features; defaults are unchanged, so existing pipelines behave as before.
 
 ### Added
 
@@ -32,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step's result.
 - A per-file summary (`N deployed, M failed` and each failed file with its error) is now
   logged at the end of every deployment.
+- `include` and `exclude` options (arrays of globs, relative to `dataset_schema_directory`) to
+  choose which files are deployed, for example one dataset or everything except SQL scripts.
+  `exclude` wins; both apply before `execute_only_changed_files`. Without them every file is
+  considered, as before.
+- `mode` option. `plan` shows what a deployment would create or update (with the changed
+  fields, including labels, description and clustering that would be removed) and which files
+  `apply` would reject, without changing anything: gbq's own code runs against a wrapper around
+  its BigQuery client that records writes and refuses everything else, and SQL files are
+  checked with a dry run instead of being executed. `validate` checks definitions offline with
+  no credentials. `apply` (the default) is unchanged. Results also appear in the annotation
+  and the log summary.
 
 ### Changed
 
