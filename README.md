@@ -126,7 +126,14 @@ docker-compose run test
 
 ### Development Commands
 
-The project uses `uv` for dependency management and `ruff` for linting/formatting.
+The project uses [uv](https://docs.astral.sh/uv/) for dependency management and `ruff` for linting/formatting. Dependencies are declared in `pyproject.toml` (runtime in `dependencies`, tools in the `dev` group) and locked in `uv.lock`; `plugin_scripts/requirements.lock` is the hash-pinned runtime subset that the plugin installs inside the deploy container. CI checks that both are up to date. The code supports Python 3.11 to 3.15; the plugin itself runs in `python:3.14-slim` unless you set `custom_image` (it needs Python 3.11 or newer with `pip`).
+
+To work without Docker:
+
+```bash
+uv sync --locked      # create .venv with the locked dev dependencies
+uv run pytest
+```
 
 ```bash
 # Run all tests and linting with auto-formatting
@@ -147,7 +154,8 @@ docker-compose run --rm ruff-check
 # Run mypy type checking
 docker-compose run --rm mypy
 
-# Lock dependencies after updating requirements.txt
+# Refresh uv.lock and the hashed runtime requirements used by the deploy container
+# after changing dependencies in pyproject.toml (add `--upgrade` to bump every pin)
 docker-compose run --rm lock-requirements
 docker-compose build devbox
 ```

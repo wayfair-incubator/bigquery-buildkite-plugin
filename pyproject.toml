@@ -2,11 +2,27 @@
 name = "bigquery-buildkite-plugin"
 version = "0.1.0"
 description = "Buildkite plugin for BigQuery deployments"
-requires-python = ">=3.14"
+requires-python = ">=3.11"
+dependencies = [
+    "gbq==1.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.8.0",
+]
+
+[tool.uv]
+# Not a distributable package: `uv sync` installs only the dependencies
+package = false
 
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py311"
 
 [tool.ruff.lint]
 # Enable the following rule categories:
@@ -41,7 +57,7 @@ line-ending = "auto"
 
 [tool.mypy]
 ignore_missing_imports = true
-python_version = "3.14"
+python_version = "3.11"
 
 [tool.pytest.ini_options]
 addopts = "--verbose --cov=plugin_scripts --cov-report xml:/tmp/coverage.xml --cov-report term-missing"

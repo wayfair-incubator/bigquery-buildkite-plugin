@@ -58,6 +58,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `buildkite/plugin-tester` and `buildkite/plugin-linter` images are pinned to release tags.
 - The container no longer allocates a TTY (`-it`), so build logs no longer contain `\r\n` line endings.
 
+### Changed - build and Python support
+
+- Dependencies are managed with uv: declared in `pyproject.toml` (`dependencies` and a `dev`
+  dependency group) and locked for every supported Python in a universal `uv.lock`.
+  `requirements.txt` and `requirements-test.txt` are removed. `plugin_scripts/requirements.lock`
+  is now exported from `uv.lock` (hash-pinned, runtime only).
+- Python 3.11 to 3.15 are supported and tested in CI (`requires-python >=3.11`; it was
+  `>=3.14` although CI tested 3.12-3.14). Python 3.10 is end-of-life and not supported.
+  The deploy container still defaults to `python:3.14-slim`.
+- CI installs a pinned uv through `astral-sh/setup-uv` instead of `curl | sh`; the devbox image
+  copies uv from a digest-pinned `ghcr.io/astral-sh/uv:0.13.1` instead of `:latest`. A new
+  CI job fails if `uv.lock` or `requirements.lock` is stale.
+- Renovate no longer sees the removed `requirements*.txt`; it is reconfigured for
+  `pyproject.toml`/`uv.lock` in a follow-up change.
+
 ### Added
 
 - Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
