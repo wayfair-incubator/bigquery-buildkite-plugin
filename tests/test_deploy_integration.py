@@ -294,3 +294,48 @@ def test_files_are_deployed_in_sorted_order(relative_schema_dir, mocker):
         for c in mock_bq.create_or_update_structure.call_args_list
     ]
     assert ids == ["a", "b"]
+
+
+def test_results_are_recorded_for_every_processed_file(relative_schema_dir, mocker):
+    mock_bq = mocker.Mock()
+    mock_bq.create_or_update_structure.side_effect = [None, ValueError("bad table")]
+    results = []
+
+    failed = _deploy_from_directory(
+        bq=mock_bq,
+        gcp_project="p",
+        dataset_schema_directory=relative_schema_dir,
+        updated_files=[],
+        execute_only_changed_files=False,
+        fail_pipeline_on_first_exception=False,
+        results=results,
+    )
+
+    assert failed
+    assert [(r.target, r.kind, r.status) for r in results] == [
+        ("p.ds.a", "structure", "deployed"),
+        ("p.ds.b", "structure", "failed"),
+        ("c", "sql", "deployed"),
+    ]
+    assert results[1].error == "ValueError: bad table"
+
+
+def test_deploy_writes_the_annotation_file_even_when_a_file_fails(
+    relative_schema_dir, mocker, monkeypatch, tmp_path
+):
+    from plugin_scripts import deploy
+
+    annotation = tmp_path / "annotation.md"
+    monkeypatch.setenv("annotation_file", str(annotation))
+    monkeypatch.setenv("gcp_project", "p")
+    monkeypatch.setenv("dataset_schema_directory", relative_schema_dir)
+    monkeypatch.setenv("execute_only_changed_files", "false")
+    bigquery = mocker.patch("plugin_scripts.deploy.BigQuery")
+    bigquery.return_value.create_or_update_structure.side_effect = ValueError("boom")
+
+    with pytest.raises(deploy.DeployFailed):
+        deploy._deploy()
+
+    text = annotation.read_text()
+    assert "failed to deploy" in text
+    assert "ValueError: boom" in text

@@ -161,6 +161,12 @@ if [[ ${execute_only_changed_files} == "true" ]]; then
 	fi
 fi
 
+annotate="false"
+if is_true "${BUILDKITE_PLUGIN_BIGQUERY_ANNOTATE:-false}"; then
+	annotate="true"
+fi
+annotation_context="${BUILDKITE_PLUGIN_BIGQUERY_ANNOTATION_CONTEXT:-bigquery}"
+
 default_fail_pipeline_on_first_exception="true"
 fail_pipeline_on_first_exception="false"
 if is_true "${BUILDKITE_PLUGIN_BIGQUERY_FAIL_PIPELINE_ON_FIRST_EXCEPTION:-$default_fail_pipeline_on_first_exception}"; then
@@ -178,7 +184,9 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "Docker Image: ${image}"
 fi
 
-args=("--rm" "--init" "--workdir" "${workdir}")
+# No `--rm`: the container must outlive the run so the annotation can be copied
+# out of it; the EXIT trap below removes it.
+args=("--init" "--workdir" "${workdir}")
 
 # Only an allowlist of variables reaches the container. The container runs code
 # installed from PyPI, so it must not see the rest of the job environment (other
@@ -197,6 +205,11 @@ args+=(
 	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
 	"--env" "updated_files=$changed_files"
 )
+
+annotation_container_file="/tmp/bigquery-annotation.md"
+if [[ ${annotate} == "true" ]]; then
+	args+=("--env" "annotation_file=${annotation_container_file}")
+fi
 
 if [[ -n ${gcp_service_account:-} ]]; then
 	args+=("--env" "credentials")
@@ -249,8 +262,38 @@ fi
 
 # # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`
 DOCKERID=$(credentials="${gcp_service_account:-}" docker create "${args[@]}")
-# `--rm` only applies once the container has run, so clean up if copying fails
-trap 'docker rm -f "${DOCKERID}" >/dev/null 2>&1 || true' EXIT
+annotation_tmp=""
+function cleanup {
+	docker rm -f "${DOCKERID}" >/dev/null 2>&1 || true
+	if [[ -n $annotation_tmp ]]; then
+		rm -f "$annotation_tmp"
+	fi
+}
+trap cleanup EXIT
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"
 docker cp "${PLUGIN_DIR}/plugin_scripts" "${DOCKERID}:${workdir}/plugin_scripts"
-docker start -a "${DOCKERID}"
+
+rv=0
+docker start -a "${DOCKERID}" || rv=$?
+
+# Annotate from the host so the container never needs the agent or its token.
+# A problem here must not change the result of the deployment itself.
+if [[ ${annotate} == "true" ]]; then
+	if ! command -v buildkite-agent >/dev/null 2>&1; then
+		echo "⚠️  annotate is set but buildkite-agent was not found, skipping the annotation"
+	else
+		annotation_tmp=$(mktemp)
+		if docker cp "${DOCKERID}:${annotation_container_file}" "$annotation_tmp" >/dev/null 2>&1; then
+			style="success"
+			if ((rv != 0)); then
+				style="error"
+			fi
+			buildkite-agent annotate --style "$style" --context "$annotation_context" <"$annotation_tmp" ||
+				echo "⚠️  Could not create the annotation"
+		else
+			echo "⚠️  No deployment summary was produced, skipping the annotation"
+		fi
+	fi
+fi
+
+exit "$rv"

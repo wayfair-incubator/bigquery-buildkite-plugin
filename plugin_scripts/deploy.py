@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import TextIO
 
@@ -11,6 +12,7 @@ from plugin_scripts.pipeline_exceptions import (
     DeployFailed,
     MissingConfigError,
 )
+from plugin_scripts.report import DeployResult, annotation_markdown, summary_text
 
 # Configure logging
 logging.basicConfig(
@@ -55,6 +57,7 @@ def _deploy():
     logger.info(f"Schema directory: {dataset_schema_directory}")
     logger.info(f"Execute only changed files: {execute_only_changed_files}")
 
+    results: list[DeployResult] = []
     try:
         bq = BigQuery(svc_account=service_account, project=gcp_project)
         deploy_failed = _deploy_from_directory(
@@ -64,13 +67,51 @@ def _deploy():
             updated_files,
             execute_only_changed_files,
             fail_pipeline_on_first_exception,
+            results,
         )
     except Exception as e:
         logger.error(f"Deployment failed with error: {e}", exc_info=True)
         raise DeployFailed(f"Deployment failed: {e}") from e
+    finally:
+        _report(results, gcp_project)
 
     if deploy_failed:
         raise DeployFailed("One or more files failed to deploy")
+
+
+def _report(results: list[DeployResult], gcp_project: str | None) -> None:
+    """Log a per-file summary and, if asked, write the Buildkite annotation file."""
+    if results:
+        logger.info(f"Summary: {summary_text(results)}")
+
+    annotation_file = os.environ.get("annotation_file")
+    if annotation_file:
+        try:
+            Path(annotation_file).write_text(
+                annotation_markdown(results, gcp_project or "")
+            )
+        except OSError as e:
+            logger.warning(f"Could not write the annotation file: {e}")
+
+
+def _record(
+    results: list[DeployResult],
+    file_path: Path,
+    target: str,
+    started: float,
+    status: str,
+    error: str = "",
+) -> None:
+    results.append(
+        DeployResult(
+            path=str(file_path),
+            kind="sql" if file_path.suffix == ".sql" else "structure",
+            target=target,
+            status=status,
+            seconds=time.monotonic() - started,
+            error=error,
+        )
+    )
 
 
 def _deploy_from_directory(
@@ -80,6 +121,7 @@ def _deploy_from_directory(
     updated_files: list[str],
     execute_only_changed_files: bool,
     fail_pipeline_on_first_exception: bool,
+    results: list[DeployResult] | None = None,
 ) -> bool:
     """
     Deploy all schema files from the specified directory.
@@ -91,12 +133,15 @@ def _deploy_from_directory(
         updated_files: List of files that have been updated
         execute_only_changed_files: Whether to only process changed files
         fail_pipeline_on_first_exception: Whether to fail fast on first error
+        results: If given, a DeployResult is appended for every file processed
 
     Returns:
         bool: True if any deployment failed, False otherwise
     """
     deploy_failed = False
     deployed_count = 0
+    if results is None:
+        results = []
     base_path = Path(dataset_schema_directory)
 
     # Compare resolved paths so `./schemas/x.json`, `schemas/x.json` and an
@@ -129,6 +174,13 @@ def _deploy_from_directory(
 
             logger.info(f"Processing file: {file_path}")
 
+            target = (
+                file_stem
+                if file_extension == "sql"
+                else f"{gcp_project}.{dataset}.{file_stem}"
+            )
+            started = time.monotonic()
+
             try:
                 with file_path.open() as contents:
                     if file_extension == "sql":
@@ -146,18 +198,38 @@ def _deploy_from_directory(
                             gcp_project=gcp_project,
                         )
                 deployed_count += 1
+                _record(results, file_path, target, started, "deployed")
             except json.JSONDecodeError as e:
                 logger.error(f"Invalid JSON in {file_path}: {e}")
+                _record(
+                    results, file_path, target, started, "failed", f"Invalid JSON: {e}"
+                )
                 deploy_failed = True
                 if fail_pipeline_on_first_exception:
                     return deploy_failed
             except FileNotFoundError as e:
                 logger.error(f"File not found: {file_path}: {e}")
+                _record(
+                    results,
+                    file_path,
+                    target,
+                    started,
+                    "failed",
+                    f"File not found: {e}",
+                )
                 deploy_failed = True
                 if fail_pipeline_on_first_exception:
                     return deploy_failed
             except Exception as e:
                 logger.error(f"Failed to deploy {file_path}: {e}", exc_info=True)
+                _record(
+                    results,
+                    file_path,
+                    target,
+                    started,
+                    "failed",
+                    f"{type(e).__name__}: {e}",
+                )
                 deploy_failed = True
                 if fail_pipeline_on_first_exception:
                     return deploy_failed
