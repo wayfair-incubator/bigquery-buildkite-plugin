@@ -58,6 +58,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `buildkite/plugin-tester` and `buildkite/plugin-linter` images are pinned to release tags.
 - The container no longer allocates a TTY (`-it`), so build logs no longer contain `\r\n` line endings.
 
+### Changed - release process
+
+- Releases are created by a workflow. Merging a pull request that turns `## [Unreleased]` in
+  `CHANGELOG.md` into `## [X.Y.Z] - date` (and updates the version in `README.md`) tags that
+  commit `vX.Y.Z` and publishes a GitHub release with the changelog section as its notes. It uses
+  the workflow's own token, needs no secrets, and does nothing if the release exists. See
+  CONTRIBUTING.md.
+- The `shfmt` CI job now fails on unformatted scripts (it previously rewrote files and always passed)
+  and also checks `.github/scripts`.
+
 ### Changed - build and Python support
 
 - Dependencies are managed with uv: declared in `pyproject.toml` (`dependencies` and a `dev`
