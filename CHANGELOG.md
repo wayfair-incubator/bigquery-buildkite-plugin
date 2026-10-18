@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-18
+
 ### Changed
 
 - **Default deploy image is now `python:3.15-slim`** (was `python:3.14-slim`). The locked
@@ -81,7 +83,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Stored procedure arguments can be `ARRAY<...>`/`STRUCT<...>` (full types), and column
     attributes such as policy tags, precision and default values are preserved on update.
   - SQL files still run in `gcp_project`.
-- This release is intended to be published as **3.0.0**.
 
 ### Added
 
