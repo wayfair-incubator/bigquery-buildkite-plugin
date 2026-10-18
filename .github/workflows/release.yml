@@ -1,0 +1,66 @@
+name: "Release"
+
+# A release is a tag `vX.Y.Z` plus a GitHub release; Buildkite users pin the tag
+# (`wayfair-incubator/bigquery#vX.Y.Z`). To release, merge a pull request that turns
+# `## [Unreleased]` in CHANGELOG.md into `## [X.Y.Z] - date` and updates the version
+# in README.md. This workflow then tags that commit. It does nothing if the tag exists.
+on:
+  push:
+    branches: ["main"]
+    paths: ["CHANGELOG.md"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Tag and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag and the GitHub release
+    steps:
+      - name: Check out code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Find the version to release
+        id: version
+        run: echo "version=$(.github/scripts/changelog.sh latest)" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether it is already released
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "v${VERSION}" > /dev/null 2>&1; then
+            echo "Release v${VERSION} already exists, nothing to do"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check the README mentions this version
+        if: steps.exists.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if ! grep -q "bigquery#v${VERSION}:" README.md; then
+            echo "::error::README.md does not use wayfair-incubator/bigquery#v${VERSION}; update it in the release pull request"
+            exit 1
+          fi
+
+      - name: Create the tag and release
+        if: steps.exists.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          .github/scripts/changelog.sh notes "${VERSION}" > "${RUNNER_TEMP}/notes.md"
+          gh release create "v${VERSION}" \
+            --target "${TARGET_SHA}" \
+            --title "v${VERSION}" \
+            --notes-file "${RUNNER_TEMP}/notes.md"
