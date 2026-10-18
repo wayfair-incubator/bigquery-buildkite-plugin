@@ -25,6 +25,12 @@ configuration:
     custom_image:
       type: string
       description: "Custom Docker image to use for deployment (default: python:3.15-slim)"
+    annotate:
+      type: boolean
+      description: "Add a Buildkite annotation summarising each file's result (default: false)"
+    annotation_context:
+      type: string
+      description: "Context of the annotation, so several deployments can each keep their own (default: bigquery)"
     debug_mode:
       type: boolean
       description: "Enable verbose debug logging for troubleshooting (default: false)"

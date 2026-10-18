@@ -13,14 +13,33 @@ setup() {
   cat >"${STUB_BIN}/docker" <<'STUB'
 #!/bin/bash
 printf '%s\n' "$1" >>"${DOCKER_LOG}"
-if [ "$1" = create ]; then
-  # one argument per line, plus whether the credentials env var was visible
-  printf '%s\n' "$@" >"${DOCKER_LOG}.create"
-  printf 'credentials_in_env=%s\n' "${credentials:-}" >"${DOCKER_LOG}.env"
-  echo fakecontainer
-fi
+case "$1" in
+  create)
+    # one argument per line, plus whether the credentials env var was visible
+    printf '%s\n' "$@" >"${DOCKER_LOG}.create"
+    printf 'credentials_in_env=%s\n' "${credentials:-}" >"${DOCKER_LOG}.env"
+    echo fakecontainer
+    ;;
+  cp)
+    # copying the annotation out of the container
+    if [[ $2 == *:/tmp/bigquery-annotation.md ]]; then
+      [ -n "${STUB_NO_ANNOTATION:-}" ] && exit 1
+      echo "STUB-ANNOTATION" >"$3"
+    fi
+    ;;
+  start)
+    exit "${STUB_START_RC:-0}"
+    ;;
+esac
 STUB
   chmod +x "${STUB_BIN}/docker"
+
+  cat >"${STUB_BIN}/buildkite-agent" <<'STUB'
+#!/bin/bash
+printf '%s\n' "$@" >"${DOCKER_LOG}.annotate"
+cat >"${DOCKER_LOG}.annotate.body"
+STUB
+  chmod +x "${STUB_BIN}/buildkite-agent"
 
   cd "${TEST_DIR}/repo"
   git init -q .
@@ -214,4 +233,56 @@ STUB
   [ "$status" -eq 0 ]
   grep -qx -- "credentials" "${DOCKER_LOG}.create"
   ! grep -q "google-adc.json" "${DOCKER_LOG}.create"
+}
+
+@test "annotations are off by default" {
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  [ ! -e "${DOCKER_LOG}.annotate" ]
+  ! grep -q "annotation_file" "${DOCKER_LOG}.create"
+}
+
+@test "annotate copies the summary out of the container and annotates from the host" {
+  export BUILDKITE_PLUGIN_BIGQUERY_ANNOTATE=true
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "annotation_file=/tmp/bigquery-annotation.md" "${DOCKER_LOG}.create"
+  grep -qx -- "--style" "${DOCKER_LOG}.annotate"
+  grep -qx "success" "${DOCKER_LOG}.annotate"
+  grep -qx "bigquery" "${DOCKER_LOG}.annotate"
+  grep -qx "STUB-ANNOTATION" "${DOCKER_LOG}.annotate.body"
+}
+
+@test "a failed deployment is annotated as an error and still fails the step" {
+  export BUILDKITE_PLUGIN_BIGQUERY_ANNOTATE=true
+  export BUILDKITE_PLUGIN_BIGQUERY_ANNOTATION_CONTEXT=my-ctx
+  export STUB_START_RC=3
+  run "${HOOK}"
+  [ "$status" -eq 3 ]
+  grep -qx "error" "${DOCKER_LOG}.annotate"
+  grep -qx "my-ctx" "${DOCKER_LOG}.annotate"
+}
+
+@test "the container is removed after the run" {
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  tail -n 1 "${DOCKER_LOG}" | grep -qx "rm"
+  ! grep -qx -- "--rm" "${DOCKER_LOG}.create"
+}
+
+@test "a missing summary is skipped without failing the deployment" {
+  export BUILDKITE_PLUGIN_BIGQUERY_ANNOTATE=true
+  export STUB_NO_ANNOTATION=1
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  [[ $output == *"No deployment summary was produced"* ]]
+  [ ! -e "${DOCKER_LOG}.annotate" ]
+}
+
+@test "an annotate failure on the host does not change the result" {
+  export BUILDKITE_PLUGIN_BIGQUERY_ANNOTATE=true
+  printf '#!/bin/bash\nexit 1\n' >"${STUB_BIN}/buildkite-agent"
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  [[ $output == *"Could not create the annotation"* ]]
 }

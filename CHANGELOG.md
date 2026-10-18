@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `annotate` option: adds a Buildkite annotation with a per-file table (target, result, time,
+  error), created from the agent after the run, as an error annotation when the deployment
+  fails. `annotation_context` (default `bigquery`) separates annotations of several steps.
+  Error text and file names are HTML-escaped, and a failure to annotate never changes the
+  step's result.
+- A per-file summary (`N deployed, M failed` and each failed file with its error) is now
+  logged at the end of every deployment.
+
+### Changed
+
+- The deploy container is no longer started with `--rm`; the hook removes it on exit, so the
+  summary can be copied out of it.
+
 ## [3.0.0] - 2026-10-18
 
 ### Changed
