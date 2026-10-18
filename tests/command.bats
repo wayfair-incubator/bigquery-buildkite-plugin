@@ -100,3 +100,89 @@ teardown() {
   [ "$status" -eq 1 ]
   [[ $output == *"gcp service account (gcp_service_account) not set"* ]]
 }
+
+@test "fail_pipeline_on_first_exception option is honoured" {
+  export BUILDKITE_PLUGIN_BIGQUERY_FAIL_PIPELINE_ON_FIRST_EXCEPTION=false
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "fail_pipeline_on_first_exception=false" "${DOCKER_LOG}.create"
+}
+
+@test "fail_pipeline_on_first_exception defaults to true" {
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "fail_pipeline_on_first_exception=true" "${DOCKER_LOG}.create"
+}
+
+@test "execute_only_changed_files defaults to false and skips git" {
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "execute_only_changed_files=false" "${DOCKER_LOG}.create"
+  grep -qx "updated_files=" "${DOCKER_LOG}.create"
+}
+
+@test "changed files are sent relative to the checkout (default branch)" {
+  echo '{}' >schemas/ds/b.json
+  git add -A && git commit -qm second
+  export BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES=true
+
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "execute_only_changed_files=true" "${DOCKER_LOG}.create"
+  grep -qx "updated_files=schemas/ds/b.json" "${DOCKER_LOG}.create"
+}
+
+@test "feature branch is compared with the base branch, not just the last commit" {
+  git update-ref refs/remotes/origin/main HEAD
+  git checkout -q -b feature
+  echo '{}' >schemas/ds/b.json && git add -A && git commit -qm one
+  echo '{}' >schemas/ds/c.json && git add -A && git commit -qm two
+  export BUILDKITE_BRANCH=feature
+  export BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES=true
+
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  # multi-line values print one path per line in the argument log
+  grep -qx "updated_files=schemas/ds/b.json" "${DOCKER_LOG}.create"
+  grep -qx "schemas/ds/c.json" "${DOCKER_LOG}.create"
+}
+
+@test "first commit processes all files" {
+  export BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES=true
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "execute_only_changed_files=false" "${DOCKER_LOG}.create"
+}
+
+@test "a git failure fails the step instead of silently deploying nothing" {
+  echo '{}' >schemas/ds/b.json
+  git add -A && git commit -qm second
+  # A git that can list HEAD^ but cannot diff
+  cat >"${STUB_BIN}/git" <<'STUB'
+#!/bin/bash
+case "$1" in
+  diff-tree | diff) exit 128 ;;
+  *) exec /usr/bin/env -i PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" git "$@" ;;
+esac
+STUB
+  chmod +x "${STUB_BIN}/git"
+  export BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES=true
+
+  run "${HOOK}"
+  [ "$status" -eq 1 ]
+  [[ $output == *"could not list the files changed"* ]]
+  [ ! -e "${DOCKER_LOG}.create" ]
+}
+
+@test "the docker pull retry count comes from this plugin's namespace" {
+  cat >"${STUB_BIN}/docker" <<'STUB'
+#!/bin/bash
+echo "$1" >>"${DOCKER_LOG}"
+[ "$1" = pull ] && exit 1
+exit 0
+STUB
+  export BUILDKITE_PLUGIN_BIGQUERY_DOCKER_PULL_RETRIES=2
+  run "${HOOK}"
+  [ "$status" -ne 0 ]
+  [ "$(grep -c '^pull$' "${DOCKER_LOG}")" -eq 2 ]
+}

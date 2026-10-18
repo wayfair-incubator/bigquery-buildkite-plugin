@@ -59,9 +59,14 @@ if [ -z "${gcp_service_account:-}" ]; then
 	exit 1
 fi
 
-execute_only_changed_files=0
-if [[ ${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-false} =~ (true|on|1) ]]; then
-	execute_only_changed_files=1
+# plugin.yml booleans arrive as strings: normalise to true/false
+function is_true {
+	[[ ${1:-} =~ ^(true|on|yes|1)$ ]]
+}
+
+execute_only_changed_files="false"
+if is_true "${BUILDKITE_PLUGIN_BIGQUERY_EXECUTE_ONLY_CHANGED_FILES:-false}"; then
+	execute_only_changed_files="true"
 fi
 
 default_prod_build_branch="master"
@@ -70,63 +75,85 @@ prod_build_branch="${BUILDKITE_PLUGIN_BIGQUERY_PROD_BUILD_BRANCH:-$default_prod_
 default_current_branch="non_master"
 current_branch="${BUILDKITE_BRANCH:-$default_current_branch}"
 
-# Get changed files with proper error handling and absolute paths
+# Changed files are only needed (and git is only consulted) when deploying
+# just the changed files. Paths are relative to the current directory, which is
+# also the working directory inside the container.
 changed_files=""
 is_default_branch="false"
 
-if [[ ${prod_build_branch} == "${current_branch}" ]]; then
-	is_default_branch="true"
-	echo "--- :git: Detecting changed files on default branch (${current_branch})"
+# list_changed_files <diff|diff-tree> <git-args...>: print changed paths under $PWD
+function list_changed_files {
+	git "$1" --relative --diff-filter=ABMRT --name-only -z "${@:2}" | tr '\0' '\n'
+}
 
-	# For default branch, compare with parent commit
-	if git rev-parse HEAD^ >/dev/null 2>&1; then
-		raw_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r HEAD^..HEAD 2>/dev/null || echo "")
-	else
-		# First commit, use all files
-		echo "⚠️  First commit detected, will process all files"
-		raw_files=""
-	fi
-else
-	echo "--- :git: Detecting changed files on feature branch (${current_branch})"
+if [[ ${execute_only_changed_files} == "true" ]]; then
+	raw_files=""
+	if [[ ${prod_build_branch} == "${current_branch}" ]]; then
+		is_default_branch="true"
+		echo "--- :git: Detecting changed files on default branch (${current_branch})"
 
-	# For feature branches, compare with origin base branch
-	base_branch="origin/${prod_build_branch}"
-	if git rev-parse --verify "$base_branch" >/dev/null 2>&1; then
-		# Use three-dot syntax for merge-base comparison
-		raw_files=$(git diff --diff-filter=ABMRT --name-only "${base_branch}...HEAD" 2>/dev/null || echo "")
-	else
-		echo "⚠️  Warning: Could not find base branch $base_branch"
-		echo "⚠️  Falling back to comparing with HEAD^"
-		raw_files=$(git diff-tree --diff-filter=ABMRT --no-commit-id --name-only -r HEAD^..HEAD 2>/dev/null || echo "")
-	fi
-fi
-
-# Convert relative paths to absolute paths and format as a newline-separated list
-if [[ -n $raw_files ]]; then
-	abs_changed_files=""
-	while IFS= read -r file; do
-		if [[ -n $file ]]; then
-			# Convert to absolute path
-			if [[ -e $file ]]; then
-				abs_path="$(cd "$(dirname "$file")" && pwd)/$(basename "$file")"
-				abs_changed_files="${abs_changed_files}${abs_path}"$'\n'
+		if git rev-parse --verify -q HEAD^ >/dev/null; then
+			# For the default branch, compare with the parent commit
+			if ! raw_files=$(list_changed_files diff-tree --no-commit-id -r HEAD^..HEAD); then
+				echo "ERROR: could not list the files changed in the last commit"
+				exit 1
 			fi
+		else
+			echo "⚠️  First commit detected, will process all files"
+			execute_only_changed_files="false"
 		fi
-	done <<<"$raw_files"
+	else
+		echo "--- :git: Detecting changed files on feature branch (${current_branch})"
 
-	# Remove trailing newline
-	changed_files="${abs_changed_files%$'\n'}"
+		# For feature branches, compare with the base branch
+		base_branch="origin/${prod_build_branch}"
+		if ! git rev-parse --verify -q "$base_branch" >/dev/null; then
+			# Shallow checkouts often lack the base branch
+			git fetch --quiet origin "${prod_build_branch}" >/dev/null 2>&1 || true
+		fi
 
-	if [[ -n $changed_files ]]; then
-		file_count=$(printf '%s\n' "$changed_files" | wc -l)
-		echo "📝 Detected ${file_count} changed file(s)"
+		if git rev-parse --verify -q "$base_branch" >/dev/null; then
+			# Three-dot syntax compares against the merge-base
+			if ! raw_files=$(list_changed_files diff "${base_branch}...HEAD"); then
+				echo "ERROR: could not compare with ${base_branch}"
+				exit 1
+			fi
+		elif git rev-parse --verify -q HEAD^ >/dev/null; then
+			echo "⚠️  Warning: Could not find base branch $base_branch"
+			echo "⚠️  Falling back to comparing with HEAD^ (only the last commit)"
+			if ! raw_files=$(list_changed_files diff-tree --no-commit-id -r HEAD^..HEAD); then
+				echo "ERROR: could not list the files changed in the last commit"
+				exit 1
+			fi
+		else
+			echo "⚠️  No base branch and no parent commit, will process all files"
+			execute_only_changed_files="false"
+		fi
 	fi
-else
-	echo "⚠️  No changed files detected, will process all files in directory"
+
+	if [[ ${execute_only_changed_files} == "true" ]]; then
+		# Keep only paths that still exist, as a newline-separated list
+		while IFS= read -r file; do
+			if [[ -n $file && -e $file ]]; then
+				changed_files="${changed_files}${file}"$'\n'
+			fi
+		done <<<"$raw_files"
+		changed_files="${changed_files%$'\n'}"
+
+		if [[ -n $changed_files ]]; then
+			file_count=$(printf '%s\n' "$changed_files" | wc -l)
+			echo "📝 Detected ${file_count} changed file(s)"
+		else
+			echo "ℹ️  No changed files detected, nothing will be deployed"
+		fi
+	fi
 fi
 
 default_fail_pipeline_on_first_exception="true"
-fail_pipeline_on_first_exception="${BUILDKITE_PLUGIN_BIGQUERY_DEFAULT_FAIL_PIPELINE_ON_FIRST_EXCEPTION:-$default_fail_pipeline_on_first_exception}"
+fail_pipeline_on_first_exception="false"
+if is_true "${BUILDKITE_PLUGIN_BIGQUERY_FAIL_PIPELINE_ON_FIRST_EXCEPTION:-$default_fail_pipeline_on_first_exception}"; then
+	fail_pipeline_on_first_exception="true"
+fi
 
 if [[ ${debug_mode} == "true" ]]; then
 	echo "Configuration:"
@@ -139,7 +166,7 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "Docker Image: ${image}"
 fi
 
-args=("-it" "--rm" "--init" "--workdir" "${workdir}")
+args=("--rm" "--init" "--workdir" "${workdir}")
 
 # Only an allowlist of variables reaches the container. The container runs code
 # installed from PyPI, so it must not see the rest of the job environment (other
@@ -182,11 +209,11 @@ args+=("${command_string}")
 display_command+=("'${command_string}'")
 
 echo "--- :docker: Pulling ${image}"
-if ! retry "${BUILDKITE_PLUGIN_CLOUD_FUNCTIONS_DOCKER_PULL_RETRIES:-3}" \
-	docker pull "${image}"; then
-	rv=$?
+rv=0
+retry "${BUILDKITE_PLUGIN_BIGQUERY_DOCKER_PULL_RETRIES:-3}" docker pull "${image}" || rv=$?
+if ((rv != 0)); then
 	echo "--- :docker: Pull failed."
-	exit $rv
+	exit "$rv"
 fi
 
 echo '--- :docker: Logging "docker create" command'
@@ -202,6 +229,8 @@ fi
 
 # # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`
 DOCKERID=$(credentials="$gcp_service_account" docker create "${args[@]}")
+# `--rm` only applies once the container has run, so clean up if copying fails
+trap 'docker rm -f "${DOCKERID}" >/dev/null 2>&1 || true' EXIT
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"
 docker cp "${PLUGIN_DIR}/plugin_scripts" "${DOCKERID}:${workdir}/plugin_scripts"
 docker start -a "${DOCKERID}"
