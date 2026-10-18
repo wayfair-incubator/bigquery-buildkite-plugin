@@ -83,6 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An invalid service account key now fails with a clear message that does not include the key.
 - Bats tests for `hooks/command` (run with `docker compose run --rm test`, and in CI).
 
+### Changed - release process
+
+- Releases are created by a workflow. Merging a pull request that turns `## [Unreleased]` in
+  `CHANGELOG.md` into `## [X.Y.Z] - date` (and updates the version in `README.md`) tags that
+  commit `vX.Y.Z` and publishes a GitHub release with the changelog section as its notes. It uses
+  the workflow's own token, needs no secrets, and does nothing if the release exists. See
+  CONTRIBUTING.md.
+- The `shfmt` CI job now fails on unformatted scripts (it previously rewrote files and always passed)
+  and also checks `.github/scripts`.
+
 ### Changed - build and Python support
 
 - Dependencies are managed with uv: declared in `pyproject.toml` (`dependencies` and a `dev`
@@ -95,8 +105,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI installs a pinned uv through `astral-sh/setup-uv` instead of `curl | sh`; the devbox image
   copies uv from a digest-pinned `ghcr.io/astral-sh/uv:0.13.1` instead of `:latest`. A new
   CI job fails if `uv.lock` or `requirements.lock` is stale.
-- Renovate no longer sees the removed `requirements*.txt`; it is reconfigured for
-  `pyproject.toml`/`uv.lock` in a follow-up change.
+- Dependency updates: Dependabot is removed (it duplicated Renovate's pull requests). Renovate now
+  uses `config:recommended` and the `pep621`, `dockerfile`, `docker-compose` and `github-actions`
+  managers, plus regex managers for the uv, default image and shfmt versions in `hooks/command`
+  and `docker/shfmt.dockerfile`. uv updates (docker image, `setup-uv` `version:`, hook) and
+  Go/shfmt updates are grouped, and `uv.lock` is refreshed weekly (lock file maintenance).
 
 ## [2.0.0] - 2025-11-02
 

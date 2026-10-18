@@ -18,7 +18,8 @@ services:
       dockerfile: "docker/shfmt.dockerfile"
     command: "-s -l -w ." # (s)implify, (l)ist changes, (w)rite changes to file
     volumes:
-      - "./hooks:/plugin"
+      - "./hooks:/plugin/hooks"
+      - "./.github/scripts:/plugin/scripts"
 
   devbox: &devbox
     build:
