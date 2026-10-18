@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Default deploy image is now `python:3.15-slim`** (was `python:3.14-slim`). The locked
+  dependencies install and import on 3.15 (tested); set `custom_image: python:3.14-slim` to keep
+  the old image.
+- Updated GitHub Actions: `actions/checkout` v7.0.1, `actions/stale` v11.0.0,
+  `actions/upload-artifact` v7.0.2, `astral-sh/setup-uv` v10.3.0 (all pinned by SHA).
+- shfmt v3.14.1 built with Go 1.27; `uv.lock` re-resolved (already at the latest versions).
+
 ### Security
 
 - **Fixed command injection through changed file names.** The list of changed files was
