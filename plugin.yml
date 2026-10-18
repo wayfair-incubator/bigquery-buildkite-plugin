@@ -18,7 +18,7 @@ configuration:
       description: "Production branch name for determining deployment strategy (default: master)"
     execute_only_changed_files:
       type: boolean
-      description: "Only process files that changed in the current commit (default: true)"
+      description: "Only deploy schema files changed in the build: the last commit on prod_build_branch, or the whole branch compared with prod_build_branch otherwise (default: false)"
     fail_pipeline_on_first_exception:
       type: boolean
       description: "Stop deployment immediately on first error (default: true)"

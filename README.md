@@ -50,11 +50,11 @@ Default: `master`
 
 ### `execute_only_changed_files` (optional, boolean)
 
-Whether to execute just the files that changed in a directory or not.
+Whether to deploy just the files that changed instead of every file in the directory. On `prod_build_branch` the files changed in the last commit are deployed; on other branches, the files changed compared with `origin/<prod_build_branch>`. If nothing changed, nothing is deployed. If git cannot compare (for example a first commit), all files are deployed; if git fails, the step fails.
 
 Example: `true`
 
-Default: `true`
+Default: `false`
 
 ### `fail_pipeline_on_first_exception` (optional, boolean)
 

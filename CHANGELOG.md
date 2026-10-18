@@ -28,8 +28,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `fail_pipeline_on_first_exception` was ignored (the hook read a misnamed variable), so
+  deployments always stopped at the first failure. The option is now honoured.
+- `execute_only_changed_files: true` deployed nothing and still succeeded: the hook sent
+  absolute host paths that never matched the relative paths the container compares. Paths
+  are now relative to the checkout and compared after resolving, so `./x`, `x` and absolute
+  forms match. When no file changed the log says so.
+- The documented default of `execute_only_changed_files` was `true`, but the hook has always
+  used `false`. The docs now say `false`; behaviour is unchanged.
+- Git failures while detecting changed files were swallowed and led to deploying nothing.
+  The step now fails with an error. On feature branches the base branch is fetched when
+  missing (shallow clones) before falling back to the last commit, and a first commit
+  deploys all files.
+- A failed `docker pull` made the hook exit 0; it now exits with the pull's status. The
+  retry count is read from `BUILDKITE_PLUGIN_BIGQUERY_DOCKER_PULL_RETRIES` (it was named
+  after another plugin).
+- The created container is removed if copying the checkout into it fails.
+- Files are deployed in sorted path order instead of filesystem order.
+- Booleans accept `true`, `on`, `yes` and `1` consistently.
 - The `shfmt` lint job failed because the Dockerfile installed `shfmt@latest`, which now
   needs a newer Go than the image provides. shfmt is pinned to v3.12.0.
+
+### Changed
+
+- The container no longer allocates a TTY (`-it`), so build logs no longer contain `\r\n` line endings.
 
 ### Added
 

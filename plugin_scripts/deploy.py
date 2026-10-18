@@ -98,15 +98,23 @@ def _deploy_from_directory(
         bool: True if any deployment failed, False otherwise
     """
     deploy_failed = False
+    deployed_count = 0
     base_path = Path(dataset_schema_directory)
+
+    # Compare resolved paths so `./schemas/x.json`, `schemas/x.json` and an
+    # absolute path all name the same file
+    changed = {Path(f).resolve() for f in updated_files if f}
 
     logger.info(f"Scanning directory: {base_path}")
 
-    for root, _dirs, files in os.walk(dataset_schema_directory):
+    for root, dirs, files in os.walk(dataset_schema_directory):
+        # Visit directories and files in a stable order so deployments are
+        # reproducible
+        dirs.sort()
         root_path = Path(root)
         dataset = root_path.name  # Extract dataset name from directory
 
-        for file in files:
+        for file in sorted(files):
             file_path = root_path / file  # Proper path construction
             file_extension = file_path.suffix.lstrip(".")
             file_stem = file_path.stem
@@ -117,7 +125,7 @@ def _deploy_from_directory(
                 continue
 
             # Check if we should process this file based on changes
-            if execute_only_changed_files and str(file_path) not in updated_files:
+            if execute_only_changed_files and file_path.resolve() not in changed:
                 logger.debug(f"Skipping unchanged file: {file_path}")
                 continue
 
@@ -139,6 +147,7 @@ def _deploy_from_directory(
                             file_name=file_stem,
                             gcp_project=gcp_project,
                         )
+                deployed_count += 1
             except json.JSONDecodeError as e:
                 logger.error(f"Invalid JSON in {file_path}: {e}")
                 deploy_failed = True
@@ -157,8 +166,12 @@ def _deploy_from_directory(
 
     if deploy_failed:
         logger.error("Deployment completed with errors")
+    elif deployed_count == 0 and execute_only_changed_files:
+        logger.info("No changed schema files to deploy")
     else:
-        logger.info("Deployment completed successfully")
+        logger.info(
+            f"Deployment completed successfully ({deployed_count} file(s) deployed)"
+        )
 
     return deploy_failed
 

@@ -219,3 +219,78 @@ def test_deploy_verifies_correct_parameters(temp_schema_dir, mocker):
     sql_call = mock_bq.execute.call_args
     assert "query" in sql_call.kwargs
     assert "SELECT" in sql_call.kwargs["query"]
+
+
+@pytest.fixture
+def relative_schema_dir(tmp_path, monkeypatch):
+    """Schemas laid out like a checkout, addressed with relative paths."""
+    dataset_dir = tmp_path / "schemas" / "ds"
+    dataset_dir.mkdir(parents=True)
+    for name in ("b.json", "a.json"):
+        (dataset_dir / name).write_text(json.dumps({"schema": []}))
+    (dataset_dir / "c.sql").write_text("SELECT 1")
+    monkeypatch.chdir(tmp_path)
+    return "schemas"
+
+
+@pytest.mark.parametrize(
+    "changed",
+    ["schemas/ds/b.json", "./schemas/ds/b.json"],
+)
+def test_changed_files_are_matched_by_relative_path(
+    relative_schema_dir, mocker, changed
+):
+    """The hook sends paths relative to the checkout, as the container sees them."""
+    mock_bq = mocker.Mock()
+
+    result = _deploy_from_directory(
+        bq=mock_bq,
+        gcp_project="p",
+        dataset_schema_directory=relative_schema_dir,
+        updated_files=[changed],
+        execute_only_changed_files=True,
+        fail_pipeline_on_first_exception=True,
+    )
+
+    assert not result
+    assert [
+        c.kwargs["structure_id"]
+        for c in mock_bq.create_or_update_structure.call_args_list
+    ] == ["b"]
+    assert not mock_bq.execute.called
+
+
+def test_no_changed_files_deploys_nothing(relative_schema_dir, mocker):
+    mock_bq = mocker.Mock()
+
+    result = _deploy_from_directory(
+        bq=mock_bq,
+        gcp_project="p",
+        dataset_schema_directory=relative_schema_dir,
+        updated_files=[],
+        execute_only_changed_files=True,
+        fail_pipeline_on_first_exception=True,
+    )
+
+    assert not result
+    assert not mock_bq.create_or_update_structure.called
+    assert not mock_bq.execute.called
+
+
+def test_files_are_deployed_in_sorted_order(relative_schema_dir, mocker):
+    mock_bq = mocker.Mock()
+
+    _deploy_from_directory(
+        bq=mock_bq,
+        gcp_project="p",
+        dataset_schema_directory=relative_schema_dir,
+        updated_files=[],
+        execute_only_changed_files=False,
+        fail_pipeline_on_first_exception=True,
+    )
+
+    ids = [
+        c.kwargs["structure_id"]
+        for c in mock_bq.create_or_update_structure.call_args_list
+    ]
+    assert ids == ["a", "b"]
