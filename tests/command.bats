@@ -94,13 +94,6 @@ teardown() {
   grep -q -- '--require-hashes' "${DOCKER_LOG}.create"
 }
 
-@test "fails with a clear message when the service account is missing" {
-  unset gcp_service_account
-  run "${HOOK}"
-  [ "$status" -eq 1 ]
-  [[ $output == *"gcp service account (gcp_service_account) not set"* ]]
-}
-
 @test "fail_pipeline_on_first_exception option is honoured" {
   export BUILDKITE_PLUGIN_BIGQUERY_FAIL_PIPELINE_ON_FIRST_EXCEPTION=false
   run "${HOOK}"
@@ -185,4 +178,40 @@ STUB
   run "${HOOK}"
   [ "$status" -ne 0 ]
   [ "$(grep -c '^pull$' "${DOCKER_LOG}")" -eq 2 ]
+}
+
+@test "without a service account the hook uses Application Default Credentials" {
+  unset gcp_service_account
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  [[ $output == *"Application Default Credentials"* ]]
+  ! grep -qx -- "credentials" "${DOCKER_LOG}.create"
+  ! grep -q "google-adc.json" "${DOCKER_LOG}.create"
+}
+
+@test "GOOGLE_APPLICATION_CREDENTIALS file is mounted read-only when no key is set" {
+  unset gcp_service_account
+  echo '{"type": "external_account"}' >"${TEST_DIR}/adc.json"
+  export GOOGLE_APPLICATION_CREDENTIALS="${TEST_DIR}/adc.json"
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "${TEST_DIR}/adc.json:/run/secrets/google-adc.json:ro" "${DOCKER_LOG}.create"
+  grep -qx "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google-adc.json" "${DOCKER_LOG}.create"
+}
+
+@test "a missing GOOGLE_APPLICATION_CREDENTIALS file fails the step" {
+  unset gcp_service_account
+  export GOOGLE_APPLICATION_CREDENTIALS="${TEST_DIR}/does-not-exist.json"
+  run "${HOOK}"
+  [ "$status" -eq 1 ]
+  [[ $output == *"does not exist"* ]]
+}
+
+@test "the service account key takes precedence over GOOGLE_APPLICATION_CREDENTIALS" {
+  echo '{}' >"${TEST_DIR}/adc.json"
+  export GOOGLE_APPLICATION_CREDENTIALS="${TEST_DIR}/adc.json"
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx -- "credentials" "${DOCKER_LOG}.create"
+  ! grep -q "google-adc.json" "${DOCKER_LOG}.create"
 }

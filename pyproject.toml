@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Buildkite plugin for BigQuery deployments"
 requires-python = ">=3.11"
 dependencies = [
-    "gbq==1.1.0",
+    "gbq==2.0.0",
 ]
 
 [dependency-groups]

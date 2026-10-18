@@ -96,14 +96,29 @@ schemas/gcp-us-project/
 - **SQL files** are executed as written (DDL, DML or a script) in `gcp_project`. The file name is only used in logs. They are not parameterised, so use them for statements that are safe to run on every deploy, or combine them with `execute_only_changed_files`.
 - Because files run in path order and one at a time, put definitions that depend on each other in names that sort correctly, or deploy them in separate steps.
 
-## Secret
+## Credentials
 
-This plugin expects `GCP_SERVICE_ACCOUNT` is placed as environment variable. Make sure to store it [securely](https://buildkite.com/docs/pipelines/secrets)!
+The plugin authenticates to BigQuery in one of two ways.
+
+### Service account key
+
+Place the service account key JSON in the `gcp_service_account` environment variable (lowercase). Make sure to store it [securely](https://buildkite.com/docs/pipelines/secrets)!
 
 ```yaml
 env:
-  gcp_service_account: '{"email": ""}'
+  gcp_service_account: '{"type": "service_account", "project_id": "..."}'
 ```
+
+An invalid key fails the step with `svc_account is not valid service account JSON`; the key itself is never printed.
+
+### Application Default Credentials
+
+If `gcp_service_account` is **not** set, the plugin uses [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials), so no long-lived key has to be stored in Buildkite:
+
+- **Agent running on Google Cloud** (GCE, GKE with Workload Identity): the container reaches the metadata server and uses the attached service account. Nothing to configure.
+- **A credentials file:** set `GOOGLE_APPLICATION_CREDENTIALS` on the agent to a file path (for example a service account impersonation or workload identity federation configuration). The plugin mounts that file read-only into the container. The file must be self-contained: files it references (such as a token file) are not mounted.
+
+The service account (or identity) needs permission to create and update the BigQuery resources you deploy and to run the queries in your `.sql` files.
 
 ## Example
 
@@ -137,6 +152,10 @@ To leverage this you need to nest your JSON table schema in a dictionary. An exa
 
 All the configuration options can be found [here](https://github.com/wayfair-incubator/gbq/blob/main/gbq/dto.py).
 
+**Updating existing tables and views:** the JSON file is the source of truth. Labels, description and clustering that the file omits are removed from the existing table or view. Partitioning cannot be changed on an existing table (apart from a time partition's expiration): a definition whose partitioning differs fails the deployment with `InvalidDefinitionException`, so recreate the table (or revert the change) instead. Stored procedure arguments may use full types such as `ARRAY<INT64>` and `STRUCT<id INT64, tags ARRAY<STRING>>`.
+
+SQL files run in `gcp_project`.
+
 ```json
 {
   "partition": {
@@ -162,6 +181,19 @@ All the configuration options can be found [here](https://github.com/wayfair-inc
   ]
 }
 ```
+
+## Upgrading to 3.0.0
+
+Version 3.0.0 upgrades [gbq](https://github.com/wayfair-incubator/gbq) from 1.1.0 to 2.0.0. Before you upgrade, check your schema files and pipelines:
+
+1. **Omitted properties are now removed.** If a table or view already exists and its JSON file has no `labels`, `description` or `clustering`, those are cleared on the next deploy. Add them to the file first if you want to keep them (for example copy them from the console).
+2. **Partitioning changes fail.** A deployed table whose partitioning differs from the file (other than a changed time-partition expiration, which is applied) now fails with `InvalidDefinitionException` instead of being silently ignored. Reconcile the file or recreate the table.
+3. **Invalid definitions** fail with `InvalidDefinitionException` instead of a `KeyError`; the step fails either way.
+4. **Container environment is restricted** (also new in 3.0.0): only the plugin settings, the service account and `HTTP(S)_PROXY`/`NO_PROXY` reach the container.
+5. **New:** `gcp_service_account` is optional (see [Credentials](#credentials)).
+6. **Unchanged:** `.sql` files still run in `gcp_project`, and tables are not deleted (the plugin never deletes).
+
+Pin `wayfair-incubator/bigquery#v2.0.0` to stay on the old behaviour until you are ready.
 
 ## Contributing
 

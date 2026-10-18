@@ -98,7 +98,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "gbq", specifier = "==1.1.0" }]
+requires-dist = [{ name = "gbq", specifier = "==2.0.0" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -562,15 +562,15 @@ wheels = [
 
 [[package]]
 name = "gbq"
-version = "1.1.0"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-cloud-bigquery" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5f/62/43d5f8d9fcc4e3bb6518387b98c179a0f317705774361cb0246ede1a2084/gbq-1.1.0.tar.gz", hash = "sha256:b1868fee299377f920ad7adb52660b5530e1e6365c633a6bb3ee299d7f66a2fe", size = 9070, upload-time = "2025-11-02T07:54:49.419Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/5d/5d8120d169c3d34ec7c964424e091599c5ada7061681b0aafbd5392f1a1b/gbq-2.0.0.tar.gz", hash = "sha256:f59b660044b1c78da5814a8e4234adae23eb7d964ebba8ad8de595c9cb241e8f", size = 15647, upload-time = "2026-10-18T11:10:27.023Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/89/eeb4ff6caedeab1526130d7aa8850b3d38661cc7e6ed6465084a7cbc8c08/gbq-1.1.0-py3-none-any.whl", hash = "sha256:5efe96cc7a4321d7fddfd66aaeb2f595a51d936d8acb3e448bb51841685f4e9c", size = 9520, upload-time = "2025-11-02T07:54:48.339Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/b4/5f7c7f3b4634fa37bfe3d6d0e5091e97845012a9e062d7014cd827bba4dd/gbq-2.0.0-py3-none-any.whl", hash = "sha256:9bfd978cf1bc88b84526936ac790ce12bce7c42ad3bc4b2074d90e371363295e", size = 16388, upload-time = "2026-10-18T11:10:25.778Z" },
 ]
 
 [[package]]
