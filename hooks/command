@@ -54,9 +54,21 @@ fi
 
 dataset_schema_directory="${BUILDKITE_PLUGIN_BIGQUERY_DATASET_SCHEMA_DIRECTORY}"
 
-if [ -z "${gcp_service_account:-}" ]; then
-	echo "ERROR: gcp service account (gcp_service_account) not set"
-	exit 1
+# Credentials: a service account key in `gcp_service_account`, or else Application
+# Default Credentials (the metadata server of the agent's cloud identity, or the
+# file named by GOOGLE_APPLICATION_CREDENTIALS, which is mounted read-only).
+adc_credentials_file=""
+if [ -n "${gcp_service_account:-}" ]; then
+	echo "--- :key: Authenticating with the gcp_service_account key"
+else
+	echo "--- :key: gcp_service_account is not set, using Application Default Credentials"
+	if [[ -n ${GOOGLE_APPLICATION_CREDENTIALS:-} ]]; then
+		if [[ ! -f ${GOOGLE_APPLICATION_CREDENTIALS} ]]; then
+			echo "ERROR: GOOGLE_APPLICATION_CREDENTIALS points to a file that does not exist: ${GOOGLE_APPLICATION_CREDENTIALS}"
+			exit 1
+		fi
+		adc_credentials_file="${GOOGLE_APPLICATION_CREDENTIALS}"
+	fi
 fi
 
 # plugin.yml booleans arrive as strings: normalise to true/false
@@ -184,8 +196,16 @@ args+=(
 	"--env" "execute_only_changed_files=$execute_only_changed_files"
 	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
 	"--env" "updated_files=$changed_files"
-	"--env" "credentials"
 )
+
+if [[ -n ${gcp_service_account:-} ]]; then
+	args+=("--env" "credentials")
+elif [[ -n $adc_credentials_file ]]; then
+	args+=(
+		"--volume" "${adc_credentials_file}:/run/secrets/google-adc.json:ro"
+		"--env" "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google-adc.json"
+	)
+fi
 
 # Add the image in before the shell and command
 args+=("${image}")
@@ -228,7 +248,7 @@ if [[ ${debug_mode} == "true" ]]; then
 fi
 
 # # For copy-checkout, we have to `docker create`, then `docker cp "${PWD}:${workdir}"`, then `docker start`
-DOCKERID=$(credentials="$gcp_service_account" docker create "${args[@]}")
+DOCKERID=$(credentials="${gcp_service_account:-}" docker create "${args[@]}")
 # `--rm` only applies once the container has run, so clean up if copying fails
 trap 'docker rm -f "${DOCKERID}" >/dev/null 2>&1 || true' EXIT
 docker cp "${PWD}/." "${DOCKERID}:${workdir}"

@@ -38,12 +38,10 @@ def test__validate_env_variables_missing_gcp_project(
     assert exec_info.value.args[0] == "Missing `gcp_project` config"
 
 
-def test__validate_env_variables_missing_credentials(
+def test__validate_env_variables_credentials_are_optional(
     gcp_project, dataset_schema_directory
 ):
-    with pytest.raises(MissingConfigError) as exec_info:
-        deploy._validate_env_variables()
-    assert exec_info.value.args[0] == "Missing `credentials` config"
+    deploy._validate_env_variables()
 
 
 def test__validate_env_variables_all_variables_present(
@@ -111,3 +109,40 @@ def test_deploy_reads_updated_files_as_newline_separated_list(
         "schemas/a,b.json",
         "schemas/$(x);y.json",
     ]
+
+
+def test_deploy_passes_service_account_and_project_to_gbq(
+    mocker, gcp_project, dataset_schema_directory, credentials
+):
+    bigquery = mocker.patch("plugin_scripts.deploy.BigQuery")
+    mocker.patch("plugin_scripts.deploy._deploy_from_directory", return_value=False)
+
+    deploy._deploy()
+
+    bigquery.assert_called_once_with(
+        svc_account="{'secret': 'value'}", project="gcp_project"
+    )
+
+
+def test_deploy_without_credentials_uses_application_default_credentials(
+    mocker, gcp_project, dataset_schema_directory
+):
+    bigquery = mocker.patch("plugin_scripts.deploy.BigQuery")
+    mocker.patch("plugin_scripts.deploy._deploy_from_directory", return_value=False)
+
+    deploy._deploy()
+
+    bigquery.assert_called_once_with(svc_account=None, project="gcp_project")
+
+
+def test_invalid_service_account_json_fails_without_leaking_the_key(
+    monkeypatch, caplog, gcp_project, dataset_schema_directory
+):
+    """gbq 2 raises GbqException without chaining the parsed key into the error."""
+    monkeypatch.setenv("credentials", '{"private_key": "TOP-SECRET')
+
+    with pytest.raises(deploy.DeployFailed) as exc_info:
+        deploy._deploy()
+
+    assert "TOP-SECRET" not in str(exc_info.value)
+    assert "TOP-SECRET" not in caplog.text

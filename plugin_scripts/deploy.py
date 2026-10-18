@@ -28,9 +28,6 @@ def _validate_env_variables():
     if not os.environ.get("dataset_schema_directory"):
         raise MissingConfigError("Missing `dataset_schema_directory` config")
 
-    if not os.environ.get("credentials"):
-        raise MissingConfigError("Missing `credentials` config")
-
 
 def _validate_if_path_exists():
     """Validate that the dataset schema directory exists."""
@@ -41,7 +38,8 @@ def _validate_if_path_exists():
 def _deploy():
     """Main deployment function that orchestrates the BigQuery deployment."""
     dataset_schema_directory = os.environ.get("dataset_schema_directory")
-    credentials = os.environ.get("credentials")
+    # Optional: without a key, gbq uses Application Default Credentials
+    service_account = os.environ.get("credentials") or None
     gcp_project = os.environ.get("gcp_project")
 
     # Newline-separated, so file names containing commas survive
@@ -58,7 +56,7 @@ def _deploy():
     logger.info(f"Execute only changed files: {execute_only_changed_files}")
 
     try:
-        bq = BigQuery(credentials, gcp_project)
+        bq = BigQuery(svc_account=service_account, project=gcp_project)
         deploy_failed = _deploy_from_directory(
             bq,
             gcp_project,
