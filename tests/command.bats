@@ -286,3 +286,21 @@ STUB
   [ "$status" -eq 0 ]
   [[ $output == *"Could not create the annotation"* ]]
 }
+
+@test "include and exclude arrays are passed to the container, one pattern per line" {
+  export BUILDKITE_PLUGIN_BIGQUERY_INCLUDE_0="sales/**"
+  export BUILDKITE_PLUGIN_BIGQUERY_INCLUDE_1="ops/*.json"
+  export BUILDKITE_PLUGIN_BIGQUERY_EXCLUDE_0="**/*.sql"
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "include_patterns=sales/\*\*" "${DOCKER_LOG}.create"
+  grep -qx "ops/\*.json" "${DOCKER_LOG}.create"
+  grep -qx 'exclude_patterns=\*\*/\*.sql' "${DOCKER_LOG}.create"
+}
+
+@test "without include or exclude the patterns are empty" {
+  run "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -qx "include_patterns=" "${DOCKER_LOG}.create"
+  grep -qx "exclude_patterns=" "${DOCKER_LOG}.create"
+}

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 from typing import TextIO
@@ -68,6 +69,8 @@ def _deploy():
             execute_only_changed_files,
             fail_pipeline_on_first_exception,
             results,
+            _parse_patterns(os.environ.get("include_patterns")),
+            _parse_patterns(os.environ.get("exclude_patterns")),
         )
     except Exception as e:
         logger.error(f"Deployment failed with error: {e}", exc_info=True)
@@ -92,6 +95,50 @@ def _report(results: list[DeployResult], gcp_project: str | None) -> None:
             )
         except OSError as e:
             logger.warning(f"Could not write the annotation file: {e}")
+
+
+def _glob_to_regex(pattern: str) -> re.Pattern[str]:
+    """
+    Translate a glob into a regex over `/`-separated relative paths.
+
+    `*` and `?` stay within one path segment, `**` crosses segments and `**/` also
+    matches no directory at all (so `**/a.json` matches `a.json`).
+    """
+    regex = ""
+    i = 0
+    while i < len(pattern):
+        char = pattern[i]
+        if pattern.startswith("**/", i):
+            regex += "(?:.*/)?"
+            i += 3
+        elif pattern.startswith("**", i):
+            regex += ".*"
+            i += 2
+        elif char == "*":
+            regex += "[^/]*"
+            i += 1
+        elif char == "?":
+            regex += "[^/]"
+            i += 1
+        else:
+            regex += re.escape(char)
+            i += 1
+    return re.compile(regex + r"\Z")
+
+
+def _parse_patterns(raw: str | None) -> list[re.Pattern[str]]:
+    return [_glob_to_regex(p.strip()) for p in (raw or "").splitlines() if p.strip()]
+
+
+def _is_selected(
+    relative_path: str,
+    include: list[re.Pattern[str]],
+    exclude: list[re.Pattern[str]],
+) -> bool:
+    """A file is selected if it matches an include (or none are set) and no exclude."""
+    if include and not any(p.match(relative_path) for p in include):
+        return False
+    return not any(p.match(relative_path) for p in exclude)
 
 
 def _record(
@@ -122,6 +169,8 @@ def _deploy_from_directory(
     execute_only_changed_files: bool,
     fail_pipeline_on_first_exception: bool,
     results: list[DeployResult] | None = None,
+    include: list[re.Pattern[str]] | None = None,
+    exclude: list[re.Pattern[str]] | None = None,
 ) -> bool:
     """
     Deploy all schema files from the specified directory.
@@ -134,6 +183,8 @@ def _deploy_from_directory(
         execute_only_changed_files: Whether to only process changed files
         fail_pipeline_on_first_exception: Whether to fail fast on first error
         results: If given, a DeployResult is appended for every file processed
+        include: Globs (relative to the directory); only matching files are deployed
+        exclude: Globs (relative to the directory); matching files are skipped
 
     Returns:
         bool: True if any deployment failed, False otherwise
@@ -142,6 +193,9 @@ def _deploy_from_directory(
     deployed_count = 0
     if results is None:
         results = []
+    include = include or []
+    exclude = exclude or []
+    selected_any = False
     base_path = Path(dataset_schema_directory)
 
     # Compare resolved paths so `./schemas/x.json`, `schemas/x.json` and an
@@ -166,6 +220,13 @@ def _deploy_from_directory(
             if file_extension not in ("sql", "json"):
                 logger.debug(f"Skipping non-schema file: {file_path}")
                 continue
+
+            if not _is_selected(
+                file_path.relative_to(base_path).as_posix(), include, exclude
+            ):
+                logger.debug(f"Skipping file excluded by include/exclude: {file_path}")
+                continue
+            selected_any = True
 
             # Check if we should process this file based on changes
             if execute_only_changed_files and file_path.resolve() not in changed:
@@ -233,6 +294,9 @@ def _deploy_from_directory(
                 deploy_failed = True
                 if fail_pipeline_on_first_exception:
                     return deploy_failed
+
+    if include and not selected_any:
+        logger.warning("No schema file matches the include patterns")
 
     if deploy_failed:
         logger.error("Deployment completed with errors")

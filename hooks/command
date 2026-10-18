@@ -161,6 +161,24 @@ if [[ ${execute_only_changed_files} == "true" ]]; then
 	fi
 fi
 
+# collect_list <NAME>: join BUILDKITE_PLUGIN_BIGQUERY_<NAME>_0, _1, ... (a plugin
+# array) into a newline-separated string
+function collect_list {
+	local i=0 name joined=""
+	while true; do
+		name="BUILDKITE_PLUGIN_BIGQUERY_${1}_${i}"
+		if [[ -z ${!name+x} ]]; then
+			break
+		fi
+		joined="${joined}${!name}"$'\n'
+		i=$((i + 1))
+	done
+	printf '%s' "${joined%$'\n'}"
+}
+
+include_patterns=$(collect_list INCLUDE)
+exclude_patterns=$(collect_list EXCLUDE)
+
 annotate="false"
 if is_true "${BUILDKITE_PLUGIN_BIGQUERY_ANNOTATE:-false}"; then
 	annotate="true"
@@ -179,6 +197,8 @@ if [[ ${debug_mode} == "true" ]]; then
 	echo "Dataset Schema Directory: ${dataset_schema_directory}"
 	echo "Execute Only Changed Files: ${execute_only_changed_files}"
 	echo "Fail Pipeline on First Exception: ${fail_pipeline_on_first_exception}"
+	echo "Include: ${include_patterns:-<all>}"
+	echo "Exclude: ${exclude_patterns:-<none>}"
 	echo "Changed Files: ${changed_files}"
 	echo "Is Default Branch: ${is_default_branch}"
 	echo "Docker Image: ${image}"
@@ -204,6 +224,8 @@ args+=(
 	"--env" "execute_only_changed_files=$execute_only_changed_files"
 	"--env" "fail_pipeline_on_first_exception=$fail_pipeline_on_first_exception"
 	"--env" "updated_files=$changed_files"
+	"--env" "include_patterns=$include_patterns"
+	"--env" "exclude_patterns=$exclude_patterns"
 )
 
 annotation_container_file="/tmp/bigquery-annotation.md"

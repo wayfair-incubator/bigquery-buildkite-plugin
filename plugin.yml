@@ -25,6 +25,16 @@ configuration:
     custom_image:
       type: string
       description: "Custom Docker image to use for deployment (default: python:3.15-slim)"
+    include:
+      type: array
+      items:
+        type: string
+      description: "Only deploy files matching one of these globs, relative to dataset_schema_directory (default: all files)"
+    exclude:
+      type: array
+      items:
+        type: string
+      description: "Skip files matching any of these globs, relative to dataset_schema_directory (default: none)"
     annotate:
       type: boolean
       description: "Add a Buildkite annotation summarising each file's result (default: false)"

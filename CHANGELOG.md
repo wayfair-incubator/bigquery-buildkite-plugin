@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `include` and `exclude` options (arrays of globs, relative to `dataset_schema_directory`) to
+  choose which files are deployed, for example one dataset or everything except SQL scripts.
+  `exclude` wins; both apply before `execute_only_changed_files`. Without them every file is
+  considered, as before.
+
+### Added
+
 - `annotate` option: adds a Buildkite annotation with a per-file table (target, result, time,
   error), created from the agent after the run, as an error annotation when the deployment
   fails. `annotation_context` (default `bigquery`) separates annotations of several steps.
