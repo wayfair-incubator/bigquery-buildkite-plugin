@@ -39,7 +39,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.1"
+          version: "0.13.5"
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install dependencies
         run: uv sync --locked
@@ -60,7 +60,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.1"
+          version: "0.13.5"
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install dependencies
         run: uv sync --locked
@@ -78,7 +78,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.1"
+          version: "0.13.5"
       - name: Check uv.lock
         run: uv lock --check
       - name: Check the exported container requirements
