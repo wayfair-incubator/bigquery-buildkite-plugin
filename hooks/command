@@ -35,7 +35,7 @@ fi
 workdir="/workdir"
 
 # Pinned: uv is installed inside the container on every run
-uv_version="0.13.1"
+uv_version="0.13.6"
 
 default_image="python:3.15-slim"
 image="${BUILDKITE_PLUGIN_BIGQUERY_CUSTOM_IMAGE:-$default_image}"
