@@ -1,6 +1,6 @@
 services:
   test:
-    image: "buildkite/plugin-tester:v4.4.0"
+    image: "buildkite/plugin-tester:v5.0.0"
     # The tester image has no git, which hooks/command needs
     entrypoint: ["/bin/sh", "-c", "apk add --no-cache -q git && exec bats tests/"]
     volumes:
