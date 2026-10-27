@@ -7,7 +7,7 @@ services:
       - ".:/plugin"
 
   lint:
-    image: "buildkite/plugin-linter:v3.1.0"
+    image: "buildkite/plugin-linter:v3.2.0"
     command: ['--id', 'wayfair-incubator/bigquery']
     volumes:
       - ".:/plugin"
